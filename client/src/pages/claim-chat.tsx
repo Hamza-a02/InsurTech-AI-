@@ -13,7 +13,7 @@ type Message = {
 };
 
 // FNOL Steps
-type ClaimStep = "NAME" | "POLICY_ID" | "INCIDENT_DATE" | "CLAIM_TYPE" | "DESCRIPTION" | "CONFIRMATION";
+type ClaimStep = "FIVE_WS" | "ALBERTA_RULES" | "ESSENTIAL_INFO" | "CONFIRMATION";
 
 export default function ClaimChat() {
   const [, setLocation] = useLocation();
@@ -24,12 +24,12 @@ export default function ClaimChat() {
     {
       id: "1",
       role: "bot",
-      content: "Hello, I'm the AI Claims Specialist. I'm here to help you file a First Notice of Loss (FNOL). To get started, could you please provide your full name?"
+      content: "Hello, I'm the Alberta Insurance Claims Specialist. My goal is to help you document an accident for your insurer.\n\nTo begin, please tell me about the incident using the 5 Ws: Who was involved, What happened, Where did it happen, When did it occur, and Why do you think it happened?"
     }
   ]);
   
   const [inputValue, setInputValue] = useState("");
-  const [currentStep, setCurrentStep] = useState<ClaimStep>("NAME");
+  const [currentStep, setCurrentStep] = useState<ClaimStep>("FIVE_WS");
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Claim data collection
@@ -71,34 +71,26 @@ export default function ClaimChat() {
     const updatedData = { ...claimData };
     
     switch (currentStep) {
-      case "NAME":
-        updatedData.policyholderName = input;
-        nextContent = `Thank you, ${input}. Could you please provide your Policy ID?`;
-        setCurrentStep("POLICY_ID");
-        break;
-      case "POLICY_ID":
-        updatedData.policyId = input;
-        nextContent = "Got it. When did the incident occur? (Date and approximate time)";
-        setCurrentStep("INCIDENT_DATE");
-        break;
-      case "INCIDENT_DATE":
-        updatedData.incidentDate = input;
-        nextContent = "What type of claim is this? (e.g., Auto, Home, Life)";
-        setCurrentStep("CLAIM_TYPE");
-        break;
-      case "CLAIM_TYPE":
-        updatedData.claimType = input;
-        nextContent = "Please provide a detailed description of what happened.";
-        setCurrentStep("DESCRIPTION");
-        break;
-      case "DESCRIPTION":
+      case "FIVE_WS":
         updatedData.description = input;
-        nextContent = "Thank you. I have collected all the necessary information. Let me summarize:\n\n" +
-          `• **Name:** ${updatedData.policyholderName}\n` +
-          `• **Policy:** ${updatedData.policyId}\n` +
-          `• **Date:** ${updatedData.incidentDate}\n` +
-          `• **Type:** ${updatedData.claimType}\n\n` +
-          "Your claim has been submitted as a draft for an adjuster to review. An adjuster will contact you soon. Is there anything else you need?";
+        nextContent = "Thank you. Did the total damage exceed $5,000?\n\nIf so, a quick reminder of Alberta requirements: you MUST get a police sticker.\n\nAlso, under the Direct Compensation for Property Damage (DCPD) program, you will deal with your own insurer for vehicle damage, even if you are not at fault. Did you get a police sticker or is the damage minor?";
+        setCurrentStep("ALBERTA_RULES");
+        break;
+      case "ALBERTA_RULES":
+        nextContent = "Understood. Finally, please ensure you have the following essential information to share:\n\n1. Photos of the scene and any dashcam footage.\n2. Contact information for any witnesses.\n3. The 'Section A' (Third Party Liability) details of the other driver involved.\n\nHave you collected all of these details, and is there anything else you'd like to add before I submit your report?";
+        setCurrentStep("ESSENTIAL_INFO");
+        break;
+      case "ESSENTIAL_INFO":
+        updatedData.policyholderName = "Pending User Info";
+        updatedData.policyId = "Pending Policy ID";
+        updatedData.incidentDate = new Date().toLocaleDateString();
+        updatedData.claimType = "Auto (Alberta)";
+        
+        nextContent = "Thank you. I have collected all the necessary information. Let me summarize your report:\n\n" +
+          `• **Type:** Auto Claim (Alberta Jurisdiction)\n` +
+          `• **Date Reported:** ${updatedData.incidentDate}\n` +
+          `• **Initial Description:** ${updatedData.description.substring(0, 50)}...\n\n` +
+          "Your claim has been submitted as a draft for an adjuster to review. An adjuster will contact you soon to finalize your details. Is there anything else you need?";
         setCurrentStep("CONFIRMATION");
         
         // Check for high priority keywords
@@ -110,8 +102,8 @@ export default function ClaimChat() {
                               
         // Generate mock summary
         const mockSummary = [
-          `${updatedData.claimType} claim reported on ${updatedData.incidentDate}.`,
-          `Incident description: ${input.substring(0, 60)}...`,
+          `Auto claim reported under Alberta jurisdiction.`,
+          `Initial report: ${updatedData.description.substring(0, 60)}...`,
           isHighPriority ? "FLAG: Potential legal/injury involvement mentioned." : "Standard preliminary processing required."
         ];
         
