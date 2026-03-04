@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { 
   ShieldCheck, ArrowLeft, AlertTriangle, CheckCircle2, 
-  Clock, FileText, User, Calendar, Search
+  Clock, FileText, User, Calendar, Search, Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
