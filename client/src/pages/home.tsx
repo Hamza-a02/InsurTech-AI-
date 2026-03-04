@@ -12,11 +12,18 @@ export default function Home() {
           <ShieldCheck className="h-8 w-8 text-primary" />
           <span className="text-xl font-bold text-primary tracking-tight">InsurTech Assistant</span>
         </div>
-        <Link href="/admin">
-          <Button variant="outline" size="sm" className="font-medium">
-            Adjuster Login
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/faq">
+            <Button variant="ghost" size="sm" className="font-medium">
+              FAQ
+            </Button>
+          </Link>
+          <Link href="/admin">
+            <Button variant="outline" size="sm" className="font-medium">
+              Adjuster Login
+            </Button>
+          </Link>
+        </div>
       </header>
 
       {/* Main Content */}
