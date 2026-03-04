@@ -14,10 +14,11 @@ type Message = {
 
 // Mock Knowledge Base Responses
 const mockKB: Record<string, string> = {
-  "deductible": "Your standard auto policy deductible is $500 for collision and $250 for comprehensive coverage. For home insurance, your deductible is 1% of the dwelling coverage ($3,500).",
-  "rental": "Yes, your policy includes rental reimbursement coverage up to $30/day for a maximum of 30 days while your vehicle is being repaired for a covered loss.",
-  "process": "The typical claims process involves: 1) Initial report (FNOL), 2) Adjuster assignment and review within 24 hours, 3) Damage inspection/estimate, 4) Repair authorization, and 5) Final payment. The whole process usually takes 7-14 days.",
-  "default": "I can help answer questions about your policy coverages, deductibles, or explain the claims process. What specifically would you like to know?"
+  "glass": "SEF 13H is the 'Limited Glass' endorsement. In Alberta, because of all the gravel on the roads, many drivers choose to limit their glass coverage to save on premiums. It means your windshield is covered for specified perils like theft or fire, but not for routine rock chips.",
+  "rental": "SEF 20 is 'Loss of Use' coverage. Simply put, if your car is in the shop after a covered accident, this pays for a rental car so you can still get around.",
+  "non-owned": "SEF 27 covers damage to non-owned autos. Basically, if you rent a vehicle on vacation or borrow a friend's car, this endorsement extends your physical damage coverage to that borrowed vehicle so you don't need to buy the rental company's insurance.",
+  "comp_vs_coll": "Think of it this way:\n\n**Collision** covers you when your car hits something (like another car or a guardrail).\n\n**Comprehensive** covers 'everything else' that happens out of your control—like hail, theft, fire, vandalism, or hitting an animal on the highway.",
+  "default": "I can help translate insurance jargon into plain English. Try asking me about common Alberta endorsements (like SEF 13H, SEF 20, SEF 27) or the difference between coverages like Comprehensive and Collision."
 };
 
 export default function InquiryChat() {
@@ -29,7 +30,7 @@ export default function InquiryChat() {
     {
       id: "1",
       role: "bot",
-      content: "Hello! I'm the Inquiry Specialist. I can answer questions about your policy coverage, deductibles, and general insurance terms. How can I help you today?"
+      content: "Hello! I'm your Alberta Policy Expert. I'm here to help translate insurance jargon into plain English. Feel free to ask me about specific endorsements like SEF 13H, SEF 20, or the difference between coverages like Comprehensive and Collision."
     }
   ]);
   
@@ -83,9 +84,10 @@ export default function InquiryChat() {
     setTimeout(() => {
       let response = mockKB.default;
       
-      if (text.includes("deductible")) response = mockKB.deductible;
-      else if (text.includes("rental") || text.includes("car")) response = mockKB.rental;
-      else if (text.includes("process") || text.includes("how long")) response = mockKB.process;
+      if (text.includes("glass") || text.includes("13h")) response = mockKB.glass;
+      else if (text.includes("rental") || text.includes("20")) response = mockKB.rental;
+      else if (text.includes("non-owned") || text.includes("27") || text.includes("borrow")) response = mockKB["non-owned"];
+      else if (text.includes("comprehensive") || text.includes("collision") || text.includes("difference")) response = mockKB.comp_vs_coll;
 
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
