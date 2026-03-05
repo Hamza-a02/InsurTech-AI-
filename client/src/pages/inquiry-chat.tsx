@@ -12,25 +12,25 @@ type Message = {
   content: string;
 };
 
-// Mock Knowledge Base Responses
+// Mock Knowledge Base Responses (for when PDF is uploaded)
 const mockKB: Record<string, string> = {
-  "glass": "SEF 13H is the 'Limited Glass' endorsement. In Alberta, because of all the gravel on the roads, many drivers choose to limit their glass coverage to save on premiums. It means your windshield is covered for specified perils like theft or fire, but not for routine rock chips.",
-  "rental": "SEF 20 is 'Loss of Use' coverage. Simply put, if your car is in the shop after a covered accident, this pays for a rental car so you can still get around.",
-  "non-owned": "SEF 27 covers damage to non-owned autos. Basically, if you rent a vehicle on vacation or borrow a friend's car, this endorsement extends your physical damage coverage to that borrowed vehicle so you don't need to buy the rental company's insurance.",
-  "comp_vs_coll": "Think of it this way:\n\n**Collision** covers you when your car hits something (like another car or a guardrail).\n\n**Comprehensive** covers 'everything else' that happens out of your control—like hail, theft, fire, vandalism, or hitting an animal on the highway.",
-  "default": "I can help translate insurance jargon into plain English. Try asking me about common Alberta endorsements (like SEF 13H, SEF 20, SEF 27) or the difference between coverages like Comprehensive and Collision."
+  "glass": "Based on the policy document you uploaded, yes, you have the SEF 13H Limited Glass endorsement on your 2018 Honda Civic. This means you do NOT have coverage for routine rock chips or cracks to your windshield, but you are covered if the glass breaks due to fire or theft.",
+  "rental": "I checked your document. You have SEF 20 (Loss of Use) coverage with a limit of $1,500 total, and a maximum of $50 per day for a rental vehicle.",
+  "non-owned": "According to your policy, you DO have SEF 27 coverage. This means if you rent a car on vacation in Canada or the US, your current physical damage coverage extends to the rental car.",
+  "deductible": "Looking at your uploaded policy, your Collision deductible is $500, and your Comprehensive deductible is $250.",
+  "default": "Based on the document provided, I can't find specific information regarding that question. I recommend speaking directly with an agent to get a precise answer. Would you like me to connect you?"
 };
 
 export default function InquiryChat() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { addClaim } = useAppStore(); // Using this to simulate flagging high priority sessions
+  const { addClaim } = useAppStore(); 
   
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "bot",
-      content: "Hello! I'm your Alberta Policy Expert. I'm here to help translate insurance jargon into plain English. Feel free to ask me about specific endorsements like SEF 13H, SEF 20, or the difference between coverages like Comprehensive and Collision."
+      content: "Hello! I'm your Personal Policy Assistant. Please upload your insurance policy PDF using the paperclip icon below, and you can ask me any question you want. I will ONLY use the document you provide to answer your questions."
     }
   ]);
   
@@ -103,14 +103,18 @@ export default function InquiryChat() {
       return;
     }
 
-    // Standard RAG simulation
+    // Standard RAG simulation (Only answers based on PDF if uploaded)
     setTimeout(() => {
-      let response = mockKB.default;
+      let response = "Based on the document provided, I don't see sufficient information regarding that question. I recommend speaking directly with an agent to get a precise answer. Would you like me to connect you?";
       
-      if (text.includes("glass") || text.includes("13h")) response = mockKB.glass;
-      else if (text.includes("rental") || text.includes("20")) response = mockKB.rental;
-      else if (text.includes("non-owned") || text.includes("27") || text.includes("borrow")) response = mockKB["non-owned"];
-      else if (text.includes("comprehensive") || text.includes("collision") || text.includes("difference")) response = mockKB.comp_vs_coll;
+      if (!uploadedFile) {
+        response = "Please upload your policy PDF first so I can analyze it and answer your questions based on your specific coverage.";
+      } else {
+        if (text.includes("glass") || text.includes("13h")) response = mockKB.glass;
+        else if (text.includes("rental") || text.includes("20") || text.includes("car")) response = mockKB.rental;
+        else if (text.includes("non-owned") || text.includes("27") || text.includes("borrow")) response = mockKB["non-owned"];
+        else if (text.includes("deductible")) response = mockKB.deductible;
+      }
 
       setMessages(prev => [...prev, {
         id: Date.now().toString(),

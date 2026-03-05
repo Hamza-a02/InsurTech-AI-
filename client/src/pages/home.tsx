@@ -69,11 +69,11 @@ export default function Home() {
                 <div className="space-y-2">
                   <h2 className="text-2xl font-semibold">I have a policy question</h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    Ask questions about your coverage, deductibles, or general insurance terms and get instant answers.
+                    Upload your insurance policy PDF and ask any question you want. Our AI will analyze your specific document to provide answers.
                   </p>
                 </div>
                 <div className="mt-auto pt-4 flex items-center text-accent font-medium">
-                  Ask a Question
+                  Upload Policy & Ask
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </CardContent>
