@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Send, User, Bot, ArrowLeft, MessageSquare, Phone } from "lucide-react";
+import { Send, User, Bot, ArrowLeft, MessageSquare, Phone, Paperclip, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -35,13 +35,36 @@ export default function InquiryChat() {
   ]);
   
   const [inputValue, setInputValue] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setUploadedFile(file);
+      
+      // Mock the bot reading the policy PDF
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: "bot",
+        content: `I see you've uploaded your policy document: "${file.name}". I'm analyzing the details now... I can now answer specific questions about your coverages, limits, and deductibles based on this document.`
+      }]);
+    }
+  };
+
+  const removeFile = () => {
+    setUploadedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
@@ -176,22 +199,48 @@ export default function InquiryChat() {
       </div>
 
       <div className="p-4 border-t border-border bg-card">
-        <div className="max-w-3xl mx-auto flex gap-3">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Ask about your policy..."
-            className="flex-1 bg-muted/50 border-transparent focus-visible:ring-accent shadow-inner"
-          />
-          <Button 
-            onClick={handleSend} 
-            size="icon"
-            className="bg-accent hover:bg-accent/90 shadow-md transition-transform active:scale-95"
-            disabled={!inputValue.trim()}
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+        <div className="max-w-3xl mx-auto flex flex-col gap-3">
+          {uploadedFile && (
+            <div className="flex items-center gap-2 bg-muted w-fit px-3 py-1.5 rounded-md text-sm border border-border">
+              <FileText className="h-4 w-4 text-accent" />
+              <span className="truncate max-w-[200px] font-medium text-foreground">{uploadedFile.name}</span>
+              <button onClick={removeFile} className="text-muted-foreground hover:text-foreground ml-1">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <div className="flex gap-3 items-end">
+            <Button
+              variant="outline"
+              size="icon"
+              className="flex-shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept=".pdf"
+              onChange={handleFileUpload}
+            />
+            <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder={uploadedFile ? "Ask about your document..." : "Ask about your policy..."}
+              className="flex-1 bg-muted/50 border-transparent focus-visible:ring-accent shadow-inner"
+            />
+            <Button 
+              onClick={handleSend} 
+              size="icon"
+              className="bg-accent hover:bg-accent/90 shadow-md transition-transform active:scale-95 flex-shrink-0"
+              disabled={!inputValue.trim()}
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
