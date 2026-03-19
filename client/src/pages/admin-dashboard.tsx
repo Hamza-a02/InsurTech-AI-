@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { 
   ShieldCheck, ArrowLeft, AlertTriangle, CheckCircle2, 
-  Clock, FileText, User, Calendar, Search, Bot
+  Clock, FileText, User, Calendar, Search, Bot, MessageSquare, Send, Edit2, X, Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useAppStore, Claim } from "@/lib/store";
 import {
   Dialog,
@@ -25,6 +26,82 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<Partial<Claim>>({});
+  
+  // Chat state
+  const [chatMessage, setChatMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'bot', content: string}[]>([
+    { role: 'bot', content: 'I am the context-aware assistant for this claim. You can ask me questions about the information collected here.' }
+  ]);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
+
+  const handleOpenClaim = (claim: Claim) => {
+    setSelectedClaim(claim);
+    setIsEditing(false);
+    setEditData({
+      policyholderName: claim.policyholderName,
+      policyId: claim.policyId,
+      incidentDate: claim.incidentDate,
+      claimType: claim.claimType,
+      description: claim.description
+    });
+    setChatHistory([
+      { role: 'bot', content: 'I am the context-aware assistant for this claim. You can ask me questions about the information collected here.' }
+    ]);
+  };
+
+  const handleSaveEdit = () => {
+    // In a real app, this would dispatch an update to the store/backend
+    if (selectedClaim) {
+      const updatedClaim = { ...selectedClaim, ...editData };
+      setSelectedClaim(updatedClaim as Claim);
+      // We would also update the main store here, but for this mock we just update local state
+    }
+    setIsEditing(false);
+  };
+
+  const handleChatSend = () => {
+    if (!chatMessage.trim() || !selectedClaim) return;
+    
+    const userMsg = chatMessage;
+    setChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
+    setChatMessage("");
+    
+    // Mock AI logic based on the specific claim
+    setTimeout(() => {
+      let botResponse = "";
+      const query = userMsg.toLowerCase();
+      const claimText = JSON.stringify(selectedClaim).toLowerCase();
+      
+      // Simple mock logic: if the query words appear in the claim data, synthesize an answer.
+      // Otherwise, give the required fallback prompt.
+      const queryWords = query.replace(/[?.,]/g, '').split(' ').filter(w => w.length > 3);
+      const hasMatch = queryWords.some(word => claimText.includes(word));
+      
+      if (query.includes('name') || query.includes('who')) {
+        botResponse = `The policyholder is ${selectedClaim.policyholderName}.`;
+      } else if (query.includes('when') || query.includes('date')) {
+        botResponse = `The incident was reported on ${selectedClaim.incidentDate}.`;
+      } else if (query.includes('what') || query.includes('happen')) {
+        botResponse = `According to the description: "${selectedClaim.description.substring(0, 100)}..."`;
+      } else if (hasMatch) {
+        botResponse = `Based on the claim record, I can confirm that information is present in the file. Is there specific detail you need?`;
+      } else {
+        botResponse = "Not enough info in the current claim draft. Please call the client to get more info.";
+      }
+      
+      setChatHistory(prev => [...prev, { role: 'bot', content: botResponse }]);
+    }, 600);
+  };
+
   // Hardcoded for demo purposes
   const adjusterName = "Alex Sterling";
 
@@ -133,7 +210,7 @@ export default function AdminDashboard() {
                   className={`p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-muted/30 transition-colors cursor-pointer ${
                     claim.priority === "High" && claim.status === "Draft" ? "bg-destructive/5 hover:bg-destructive/10" : ""
                   }`}
-                  onClick={() => setSelectedClaim(claim)}
+                  onClick={() => handleOpenClaim(claim)}
                 >
                   <div className="flex gap-4 items-center">
                     <div className="flex-shrink-0">
@@ -202,60 +279,152 @@ export default function AdminDashboard() {
               </div>
             </DialogHeader>
 
-            <div className="p-6 pt-0 space-y-6">
-              {/* AI Summary Section - Core Feature for Adjuster UI */}
-              <div className="bg-muted/50 rounded-lg p-5 border border-border">
-                <h4 className="font-semibold text-primary mb-3 flex items-center gap-2">
-                  <Bot className="h-4 w-4" /> AI Generated Summary
-                </h4>
-                <ul className="space-y-2">
-                  {selectedClaim.summary.map((point, i) => (
-                    <li key={i} className="flex gap-2 text-sm">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span className={point.includes("FLAG") ? "text-destructive font-medium" : "text-foreground"}>
-                        {point}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            <div className="p-6 pt-0 flex flex-col lg:flex-row gap-6">
+              {/* Left Column: Claim Details */}
+              <div className="flex-1 space-y-6">
+                {/* AI Summary Section */}
+                <div className="bg-muted/50 rounded-lg p-5 border border-border">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-primary flex items-center gap-2">
+                      <Bot className="h-4 w-4" /> AI Generated Summary
+                    </h4>
+                    {!isEditing && selectedClaim.status !== "Verified" && (
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-8 gap-1">
+                        <Edit2 className="h-3 w-3" /> Edit
+                      </Button>
+                    )}
+                  </div>
+                  <ul className="space-y-2">
+                    {selectedClaim.summary.map((point, i) => (
+                      <li key={i} className="flex gap-2 text-sm">
+                        <span className="text-primary mt-0.5">•</span>
+                        <span className={point.includes("FLAG") ? "text-destructive font-medium" : "text-foreground"}>
+                          {point}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-              {/* Raw Data Form (Editable in a real app, disabled for mock) */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Policyholder Name</label>
-                  <Input value={selectedClaim.policyholderName} readOnly className="bg-card" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Policy ID</label>
-                  <Input value={selectedClaim.policyId} readOnly className="bg-card" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type of Claim</label>
-                  <Input value={selectedClaim.claimType} readOnly className="bg-card" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Incident Date/Time</label>
-                  <Input value={selectedClaim.incidentDate} readOnly className="bg-card" />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Raw User Description</label>
-                  <div className="text-sm p-3 bg-card border rounded-md min-h-[80px]">
-                    "{selectedClaim.description}"
+                {/* Raw Data Form */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Policyholder Name</label>
+                    <Input 
+                      value={isEditing ? editData.policyholderName : selectedClaim.policyholderName} 
+                      readOnly={!isEditing} 
+                      onChange={(e) => setEditData({...editData, policyholderName: e.target.value})}
+                      className={isEditing ? "bg-background border-primary" : "bg-card"} 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Policy ID</label>
+                    <Input 
+                      value={isEditing ? editData.policyId : selectedClaim.policyId} 
+                      readOnly={!isEditing} 
+                      onChange={(e) => setEditData({...editData, policyId: e.target.value})}
+                      className={isEditing ? "bg-background border-primary" : "bg-card"} 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type of Claim</label>
+                    <Input 
+                      value={isEditing ? editData.claimType : selectedClaim.claimType} 
+                      readOnly={!isEditing} 
+                      onChange={(e) => setEditData({...editData, claimType: e.target.value})}
+                      className={isEditing ? "bg-background border-primary" : "bg-card"} 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Incident Date/Time</label>
+                    <Input 
+                      value={isEditing ? editData.incidentDate : selectedClaim.incidentDate} 
+                      readOnly={!isEditing} 
+                      onChange={(e) => setEditData({...editData, incidentDate: e.target.value})}
+                      className={isEditing ? "bg-background border-primary" : "bg-card"} 
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Description</label>
+                    {isEditing ? (
+                      <Textarea 
+                        value={editData.description} 
+                        onChange={(e) => setEditData({...editData, description: e.target.value})}
+                        className="bg-background border-primary min-h-[80px]"
+                      />
+                    ) : (
+                      <div className="text-sm p-3 bg-card border rounded-md min-h-[80px]">
+                        "{selectedClaim.description}"
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {isEditing && (
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                      <X className="h-4 w-4 mr-1" /> Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSaveEdit}>
+                      <Save className="h-4 w-4 mr-1" /> Save Changes
+                    </Button>
+                  </div>
+                )}
+
+                {/* Audit Trail */}
+                <div className="text-xs text-muted-foreground flex items-center justify-between border-t pt-4">
+                  <span className="flex items-center gap-1">
+                    <Bot className="h-3 w-3"/> Collected by: {selectedClaim.collectedBy}
+                  </span>
+                  {selectedClaim.status === "Verified" && (
+                    <span className="flex items-center gap-1 text-green-600 font-medium">
+                      <CheckCircle2 className="h-3 w-3"/> Verified by: {selectedClaim.verifiedBy}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* Audit Trail */}
-              <div className="text-xs text-muted-foreground flex items-center justify-between border-t pt-4">
-                <span className="flex items-center gap-1">
-                  <Bot className="h-3 w-3"/> Collected by: {selectedClaim.collectedBy}
-                </span>
-                {selectedClaim.status === "Verified" && (
-                  <span className="flex items-center gap-1 text-green-600 font-medium">
-                    <CheckCircle2 className="h-3 w-3"/> Verified by: {selectedClaim.verifiedBy}
-                  </span>
-                )}
+              {/* Right Column: Mini Chatbot */}
+              <div className="lg:w-80 flex flex-col border rounded-lg overflow-hidden bg-card h-[500px]">
+                <div className="bg-primary/10 p-3 border-b flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Claim Assistant</h4>
+                    <p className="text-[10px] text-muted-foreground">Ask about this specific claim</p>
+                  </div>
+                </div>
+                
+                <div 
+                  ref={chatScrollRef}
+                  className="flex-1 overflow-y-auto p-3 space-y-4 bg-muted/20 text-sm"
+                >
+                  {chatHistory.map((msg, idx) => (
+                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`px-3 py-2 rounded-lg max-w-[85%] ${
+                        msg.role === 'user' 
+                          ? 'bg-primary text-primary-foreground rounded-tr-none' 
+                          : 'bg-card border shadow-sm rounded-tl-none'
+                      }`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="p-3 bg-card border-t">
+                  <div className="flex gap-2">
+                    <Input 
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                      placeholder="Ask a question..."
+                      className="h-8 text-sm bg-muted/50"
+                    />
+                    <Button size="icon" className="h-8 w-8 shrink-0" onClick={handleChatSend}>
+                      <Send className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
 
