@@ -1,38 +1,60 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { eq, desc } from "drizzle-orm";
+import { db } from "./db";
+import { claims, type Claim, type InsertClaim, type UpdateClaim } from "@shared/schema";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getClaims(): Promise<Claim[]>;
+  getClaimById(id: string): Promise<Claim | undefined>;
+  createClaim(claim: InsertClaim & { priority?: string; summary?: string[] }): Promise<Claim>;
+  updateClaim(id: string, updates: Partial<UpdateClaim>): Promise<Claim | undefined>;
+  verifyClaim(id: string, adjusterName: string): Promise<Claim | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+class DatabaseStorage implements IStorage {
+  async getClaims(): Promise<Claim[]> {
+    return db.select().from(claims).orderBy(desc(claims.date));
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getClaimById(id: string): Promise<Claim | undefined> {
+    const [claim] = await db.select().from(claims).where(eq(claims.id, id));
+    return claim;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createClaim(claimData: InsertClaim & { priority?: string; summary?: string[] }): Promise<Claim> {
+    const [claim] = await db
+      .insert(claims)
+      .values({
+        policyholderName: claimData.policyholderName,
+        policyId: claimData.policyId,
+        incidentDate: claimData.incidentDate,
+        claimType: claimData.claimType,
+        description: claimData.description,
+        priority: claimData.priority ?? "Normal",
+        summary: claimData.summary ?? [],
+        status: "Draft",
+        collectedBy: "AI Claims Specialist",
+      })
+      .returning();
+    return claim;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async updateClaim(id: string, updates: Partial<UpdateClaim>): Promise<Claim | undefined> {
+    const [updated] = await db
+      .update(claims)
+      .set(updates)
+      .where(eq(claims.id, id))
+      .returning();
+    return updated;
+  }
+
+  async verifyClaim(id: string, adjusterName: string): Promise<Claim | undefined> {
+    const [updated] = await db
+      .update(claims)
+      .set({ status: "Verified", verifiedBy: adjusterName })
+      .where(eq(claims.id, id))
+      .returning();
+    return updated;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

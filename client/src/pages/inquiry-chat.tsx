@@ -4,7 +4,8 @@ import { Send, User, Bot, ArrowLeft, MessageSquare, Phone, Paperclip, FileText, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAppStore } from "@/lib/store";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 type Message = {
   id: string;
@@ -12,30 +13,23 @@ type Message = {
   content: string;
 };
 
-// Mock Knowledge Base Responses (for when PDF is uploaded)
-const mockKB: Record<string, string> = {
-  "glass": "Based on the policy document you uploaded, yes, you have the SEF 13H Limited Glass endorsement on your 2018 Honda Civic. This means you do NOT have coverage for routine rock chips or cracks to your windshield, but you are covered if the glass breaks due to fire or theft.",
-  "rental": "I checked your document. You have SEF 20 (Loss of Use) coverage with a limit of $1,500 total, and a maximum of $50 per day for a rental vehicle.",
-  "non-owned": "According to your policy, you DO have SEF 27 coverage. This means if you rent a car on vacation in Canada or the US, your current physical damage coverage extends to the rental car.",
-  "deductible": "Looking at your uploaded policy, your Collision deductible is $500, and your Comprehensive deductible is $250.",
-  "default": "Based on the document provided, I can't find specific information regarding that question. I recommend speaking directly with an agent to get a precise answer. Would you like me to connect you?"
-};
-
 export default function InquiryChat() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { addClaim } = useAppStore(); 
-  
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "bot",
-      content: "Hello! I'm your Personal Policy Assistant. Please upload your insurance policy PDF using the paperclip icon below, and you can ask me any question you want. I will ONLY use the document you provide to answer your questions."
-    }
+      content:
+        "Hello! I'm your Personal Policy Assistant. Please upload your insurance policy PDF using the paperclip icon below, and you can ask me any question you want. I will ONLY use the document you provide to answer your questions.",
+    },
   ]);
-  
+
   const [inputValue, setInputValue] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [policyText, setPolicyText] = useState<string | null>(null);
+  const [isBotTyping, setIsBotTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,85 +37,111 @@ export default function InquiryChat() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isBotTyping]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const addBotMessage = (content: string) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), role: "bot", content },
+    ]);
+  };
+
+  const askMutation = useMutation({
+    mutationFn: async (data: { question: string; policyText: string | null }) => {
+      const res = await apiRequest("POST", "/api/inquiry/chat", data);
+      return res.json() as Promise<{ answer: string }>;
+    },
+    onSuccess: (data) => {
+      setIsBotTyping(false);
+      addBotMessage(data.answer);
+    },
+    onError: () => {
+      setIsBotTyping(false);
+      addBotMessage("I'm having trouble connecting right now. Please try again or contact an agent directly.");
+    },
+  });
+
+  const escalateMutation = useMutation({
+    mutationFn: async (message: string) => {
+      const res = await apiRequest("POST", "/api/inquiry/escalate", { message });
+      return res.json();
+    },
+  });
+
+  const extractTextFromPdf = async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = reader.result as string;
+        const cleanText = text
+          .replace(/[^\x20-\x7E\n]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        resolve(cleanText.substring(0, 12000));
+      };
+      reader.readAsText(file);
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setUploadedFile(file);
-      
-      // Mock the bot reading the policy PDF
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: "bot",
-        content: `I see you've uploaded your policy document: "${file.name}". I'm analyzing the details now... I can now answer specific questions about your coverages, limits, and deductibles based on this document.`
-      }]);
+      setIsBotTyping(true);
+
+      try {
+        const text = await extractTextFromPdf(file);
+        setPolicyText(text);
+        setIsBotTyping(false);
+        addBotMessage(
+          `I've analyzed your policy document: "${file.name}". I can now answer specific questions about your coverages, limits, deductibles, and endorsements based on this document.`
+        );
+      } catch {
+        setPolicyText(null);
+        setIsBotTyping(false);
+        addBotMessage(
+          `I was unable to fully read "${file.name}". Please ensure it's a text-based PDF and try again, or describe your question and I'll do my best.`
+        );
+      }
     }
   };
 
   const removeFile = () => {
     setUploadedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setPolicyText(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSend = () => {
-    if (!inputValue.trim()) return;
-    
-    const userMessage: Message = {
+    if (!inputValue.trim() || isBotTyping || askMutation.isPending) return;
+
+    const userContent = inputValue;
+    const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: inputValue
+      content: userContent,
     };
-    
-    setMessages(prev => [...prev, userMessage]);
+
+    setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
-    
-    // Process sentiment/keywords
-    const text = userMessage.content.toLowerCase();
-    
-    if (text.includes("lawyer") || text.includes("legal") || text.includes("complaint") || text.includes("sue")) {
-      // Create a dummy high-priority record to show in dashboard
-      addClaim({
-        policyholderName: "Unknown User (Inquiry Session)",
-        policyId: "N/A",
-        incidentDate: new Date().toLocaleDateString(),
-        claimType: "Inquiry Escalation",
-        description: `User expressed intent requiring legal/complaint attention: "${userMessage.content}"`,
-        priority: "High",
-        summary: ["High-priority keywords detected in Inquiry chat.", "Possible legal action or formal complaint mentioned."]
-      });
-      
+
+    const lowerText = userContent.toLowerCase();
+    const isHighPriority = /lawyer|legal|complaint|sue|suing|lawsuit/.test(lowerText);
+
+    if (isHighPriority) {
+      escalateMutation.mutate(userContent);
+      setIsBotTyping(true);
       setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          role: "bot",
-          content: "I understand your frustration. Given the nature of your concern, I've automatically flagged this session for priority review by a senior adjuster. Would you like me to connect you with them immediately?"
-        }]);
+        setIsBotTyping(false);
+        addBotMessage(
+          "I understand your frustration. Given the nature of your concern, I've automatically flagged this session for priority review by a senior adjuster. Would you like me to connect you with them immediately?"
+        );
       }, 1000);
       return;
     }
 
-    // Standard RAG simulation (Only answers based on PDF if uploaded)
-    setTimeout(() => {
-      let response = "Based on the document provided, I don't see sufficient information regarding that question. I recommend speaking directly with an agent to get a precise answer. Would you like me to connect you?";
-      
-      if (!uploadedFile) {
-        response = "Please upload your policy PDF first so I can analyze it and answer your questions based on your specific coverage.";
-      } else {
-        if (text.includes("glass") || text.includes("13h")) response = mockKB.glass;
-        else if (text.includes("rental") || text.includes("20") || text.includes("car")) response = mockKB.rental;
-        else if (text.includes("non-owned") || text.includes("27") || text.includes("borrow")) response = mockKB["non-owned"];
-        else if (text.includes("deductible")) response = mockKB.deductible;
-      }
-
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: "bot",
-        content: response
-      }]);
-    }, 800);
+    setIsBotTyping(true);
+    askMutation.mutate({ question: userContent, policyText });
   };
 
   const handleRequestHuman = () => {
@@ -129,15 +149,12 @@ export default function InquiryChat() {
       title: "Human Requested",
       description: "An agent will join the chat shortly.",
     });
-    
     setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: "bot",
-        content: "[SYSTEM]: Support Agent 'David R.' has joined the chat."
-      }]);
+      addBotMessage("[SYSTEM]: Support Agent 'David R.' has joined the chat.");
     }, 2000);
   };
+
+  const isDisabled = isBotTyping || askMutation.isPending;
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -153,25 +170,34 @@ export default function InquiryChat() {
             <div>
               <h1 className="font-semibold text-foreground leading-tight">Inquiry Specialist</h1>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                RAG Knowledge Base Connected
+                {policyText ? (
+                  <span className="text-green-600 font-medium">Policy Document Loaded</span>
+                ) : (
+                  "Upload policy PDF to get started"
+                )}
               </p>
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRequestHuman} className="gap-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRequestHuman}
+          className="gap-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+        >
           <Phone className="h-4 w-4" />
           <span className="hidden sm:inline">Talk to Agent</span>
         </Button>
       </header>
 
-      <div 
+      <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 md:p-6 chat-scroll bg-muted/30"
+        className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/30"
       >
         <div className="max-w-3xl mx-auto space-y-6">
           {messages.map((msg) => (
-            <div 
-              key={msg.id} 
+            <div
+              key={msg.id}
               className={`flex gap-4 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {msg.role === "bot" && (
@@ -179,19 +205,17 @@ export default function InquiryChat() {
                   <Bot className="h-4 w-4 text-white" />
                 </div>
               )}
-              
-              <div 
+              <div
                 className={`px-5 py-3.5 rounded-2xl max-w-[85%] sm:max-w-[75%] shadow-sm ${
-                  msg.role === "user" 
-                    ? "bg-accent text-accent-foreground rounded-tr-sm" 
-                    : msg.content.startsWith("[SYSTEM]") 
-                      ? "bg-secondary text-secondary-foreground w-full text-center font-medium rounded-xl"
-                      : "bg-card text-card-foreground border border-border rounded-tl-sm whitespace-pre-line"
+                  msg.role === "user"
+                    ? "bg-accent text-accent-foreground rounded-tr-sm"
+                    : msg.content.startsWith("[SYSTEM]")
+                    ? "bg-secondary text-secondary-foreground w-full text-center font-medium rounded-xl"
+                    : "bg-card text-card-foreground border border-border rounded-tl-sm whitespace-pre-line"
                 }`}
               >
                 {msg.content}
               </div>
-
               {msg.role === "user" && (
                 <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
                   <User className="h-4 w-4 text-white" />
@@ -199,6 +223,21 @@ export default function InquiryChat() {
               )}
             </div>
           ))}
+
+          {isDisabled && (
+            <div className="flex gap-4 justify-start">
+              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
+                <Bot className="h-4 w-4 text-white" />
+              </div>
+              <div className="px-5 py-4 rounded-2xl bg-card border border-border rounded-tl-sm shadow-sm">
+                <div className="flex gap-1.5 items-center h-4">
+                  <span className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:300ms]" />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -207,7 +246,9 @@ export default function InquiryChat() {
           {uploadedFile && (
             <div className="flex items-center gap-2 bg-muted w-fit px-3 py-1.5 rounded-md text-sm border border-border">
               <FileText className="h-4 w-4 text-accent" />
-              <span className="truncate max-w-[200px] font-medium text-foreground">{uploadedFile.name}</span>
+              <span className="truncate max-w-[200px] font-medium text-foreground">
+                {uploadedFile.name}
+              </span>
               <button onClick={removeFile} className="text-muted-foreground hover:text-foreground ml-1">
                 <X className="h-4 w-4" />
               </button>
@@ -215,32 +256,43 @@ export default function InquiryChat() {
           )}
           <div className="flex gap-3 items-end">
             <Button
+              data-testid="button-upload-pdf"
               variant="outline"
               size="icon"
               className="flex-shrink-0"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isDisabled}
             >
               <Paperclip className="h-5 w-5 text-muted-foreground" />
             </Button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
               accept=".pdf"
               onChange={handleFileUpload}
             />
             <Input
+              data-testid="input-inquiry-message"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder={uploadedFile ? "Ask about your document..." : "Ask about your policy..."}
+              onKeyDown={(e) => e.key === "Enter" && !isDisabled && handleSend()}
+              placeholder={
+                isDisabled
+                  ? "Please wait..."
+                  : uploadedFile
+                  ? "Ask about your document..."
+                  : "Upload your policy PDF first, then ask your question..."
+              }
               className="flex-1 bg-muted/50 border-transparent focus-visible:ring-accent shadow-inner"
+              disabled={isDisabled}
             />
-            <Button 
-              onClick={handleSend} 
+            <Button
+              data-testid="button-send-inquiry"
+              onClick={handleSend}
               size="icon"
               className="bg-accent hover:bg-accent/90 shadow-md transition-transform active:scale-95 flex-shrink-0"
-              disabled={!inputValue.trim()}
+              disabled={isDisabled || !inputValue.trim()}
             >
               <Send className="h-5 w-5" />
             </Button>

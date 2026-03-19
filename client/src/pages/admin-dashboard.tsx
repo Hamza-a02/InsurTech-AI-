@@ -1,47 +1,90 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { 
-  ShieldCheck, ArrowLeft, AlertTriangle, CheckCircle2, 
-  Clock, FileText, User, Calendar, Search, Bot, MessageSquare, Send, Edit2, X, Save
+import {
+  ShieldCheck, ArrowLeft, AlertTriangle, CheckCircle2,
+  Clock, FileText, User, Calendar, Search, Bot, Send, Edit2, X, Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppStore, Claim } from "@/lib/store";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import type { Claim } from "@shared/schema";
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
-  const { claims, verifyClaim } = useAppStore();
-  
+  const queryClient = useQueryClient();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
-  
-  // Edit mode state
+
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Claim>>({});
-  
-  // Chat state
+
   const [chatMessage, setChatMessage] = useState("");
-  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'bot', content: string}[]>([
-    { role: 'bot', content: 'I am the context-aware assistant for this claim. You can ask me questions about the information collected here.' }
+  const [chatHistory, setChatHistory] = useState<{ role: "user" | "bot"; content: string }[]>([
+    { role: "bot", content: "I am the context-aware assistant for this claim. You can ask me questions about the information collected here." },
   ]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  const adjusterName = "Alex Sterling";
+
+  const { data: claims = [], isLoading } = useQuery<Claim[]>({
+    queryKey: ["/api/claims"],
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Claim> }) => {
+      const res = await apiRequest("PATCH", `/api/claims/${id}`, data);
+      return res.json() as Promise<Claim>;
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/claims"] });
+      setSelectedClaim(updated);
+      setIsEditing(false);
+    },
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/claims/${id}/verify`, { adjusterName });
+      return res.json() as Promise<Claim>;
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/claims"] });
+      setSelectedClaim(updated);
+    },
+  });
+
+  const chatMutation = useMutation({
+    mutationFn: async ({ id, question }: { id: string; question: string }) => {
+      const res = await apiRequest("POST", `/api/claims/${id}/chat`, { question });
+      return res.json() as Promise<{ answer: string }>;
+    },
+    onSuccess: (data) => {
+      setIsChatLoading(false);
+      setChatHistory((prev) => [...prev, { role: "bot", content: data.answer }]);
+    },
+    onError: () => {
+      setIsChatLoading(false);
+      setChatHistory((prev) => [
+        ...prev,
+        { role: "bot", content: "Not enough info in the current claim draft. Please call the client to get more info." },
+      ]);
+    },
+  });
 
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [chatHistory]);
+  }, [chatHistory, isChatLoading]);
 
   const handleOpenClaim = (claim: Claim) => {
     setSelectedClaim(claim);
@@ -51,78 +94,45 @@ export default function AdminDashboard() {
       policyId: claim.policyId,
       incidentDate: claim.incidentDate,
       claimType: claim.claimType,
-      description: claim.description
+      description: claim.description,
     });
     setChatHistory([
-      { role: 'bot', content: 'I am the context-aware assistant for this claim. You can ask me questions about the information collected here.' }
+      { role: "bot", content: "I am the context-aware assistant for this claim. You can ask me questions about the information collected here." },
     ]);
   };
 
   const handleSaveEdit = () => {
-    // In a real app, this would dispatch an update to the store/backend
-    if (selectedClaim) {
-      const updatedClaim = { ...selectedClaim, ...editData };
-      setSelectedClaim(updatedClaim as Claim);
-      // We would also update the main store here, but for this mock we just update local state
-    }
-    setIsEditing(false);
+    if (!selectedClaim) return;
+    updateMutation.mutate({ id: selectedClaim.id, data: editData });
   };
 
   const handleChatSend = () => {
-    if (!chatMessage.trim() || !selectedClaim) return;
-    
-    const userMsg = chatMessage;
-    setChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
+    if (!chatMessage.trim() || !selectedClaim || isChatLoading) return;
+    const question = chatMessage;
+    setChatHistory((prev) => [...prev, { role: "user", content: question }]);
     setChatMessage("");
-    
-    // Mock AI logic based on the specific claim
-    setTimeout(() => {
-      let botResponse = "";
-      const query = userMsg.toLowerCase();
-      const claimText = JSON.stringify(selectedClaim).toLowerCase();
-      
-      // Simple mock logic: if the query words appear in the claim data, synthesize an answer.
-      // Otherwise, give the required fallback prompt.
-      const queryWords = query.replace(/[?.,]/g, '').split(' ').filter(w => w.length > 3);
-      const hasMatch = queryWords.some(word => claimText.includes(word));
-      
-      if (query.includes('name') || query.includes('who')) {
-        botResponse = `The policyholder is ${selectedClaim.policyholderName}.`;
-      } else if (query.includes('when') || query.includes('date')) {
-        botResponse = `The incident was reported on ${selectedClaim.incidentDate}.`;
-      } else if (query.includes('what') || query.includes('happen')) {
-        botResponse = `According to the description: "${selectedClaim.description.substring(0, 100)}..."`;
-      } else if (hasMatch) {
-        botResponse = `Based on the claim record, I can confirm that information is present in the file. Is there specific detail you need?`;
-      } else {
-        botResponse = "Not enough info in the current claim draft. Please call the client to get more info.";
-      }
-      
-      setChatHistory(prev => [...prev, { role: 'bot', content: botResponse }]);
-    }, 600);
+    setIsChatLoading(true);
+    chatMutation.mutate({ id: selectedClaim.id, question });
   };
-
-  // Hardcoded for demo purposes
-  const adjusterName = "Alex Sterling";
-
-  const filteredClaims = claims.filter(claim => 
-    claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    claim.policyholderName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const pendingClaimsCount = claims.filter(c => c.status === "Draft").length;
-  const highPriorityCount = claims.filter(c => c.priority === "High" && c.status === "Draft").length;
 
   const handleVerify = () => {
     if (selectedClaim) {
-      verifyClaim(selectedClaim.id, adjusterName);
-      setSelectedClaim(null);
+      verifyMutation.mutate(selectedClaim.id);
     }
   };
 
+  const filteredClaims = claims.filter(
+    (claim) =>
+      claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.policyholderName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const pendingClaimsCount = claims.filter((c) => c.status === "Draft").length;
+  const highPriorityCount = claims.filter((c) => c.priority === "High" && c.status === "Draft").length;
+  const verifiedCount = claims.filter((c) => c.status === "Verified").length;
+
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Header */}
       <header className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between sticky top-0 z-20 shadow-md">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/20" onClick={() => setLocation("/")}>
@@ -142,7 +152,6 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto p-6 space-y-8">
-        {/* Top Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="border-border shadow-sm">
             <CardContent className="p-6 flex items-center gap-4">
@@ -151,19 +160,21 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Verification Queue</p>
-                <h3 className="text-3xl font-bold">{pendingClaimsCount}</h3>
+                <h3 data-testid="stat-pending" className="text-3xl font-bold">{pendingClaimsCount}</h3>
               </div>
             </CardContent>
           </Card>
-          
-          <Card className={`border-border shadow-sm ${highPriorityCount > 0 ? 'border-destructive/50 bg-destructive/5' : ''}`}>
+
+          <Card className={`border-border shadow-sm ${highPriorityCount > 0 ? "border-destructive/50 bg-destructive/5" : ""}`}>
             <CardContent className="p-6 flex items-center gap-4">
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${highPriorityCount > 0 ? 'bg-destructive text-white' : 'bg-orange-100 text-orange-700'}`}>
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${highPriorityCount > 0 ? "bg-destructive text-white" : "bg-orange-100 text-orange-700"}`}>
                 <AlertTriangle className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">High Priority</p>
-                <h3 className={`text-3xl font-bold ${highPriorityCount > 0 ? 'text-destructive' : ''}`}>{highPriorityCount}</h3>
+                <h3 data-testid="stat-high-priority" className={`text-3xl font-bold ${highPriorityCount > 0 ? "text-destructive" : ""}`}>
+                  {highPriorityCount}
+                </h3>
               </div>
             </CardContent>
           </Card>
@@ -175,22 +186,22 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Verified Today</p>
-                <h3 className="text-3xl font-bold">{claims.filter(c => c.status === "Verified").length}</h3>
+                <h3 data-testid="stat-verified" className="text-3xl font-bold">{verifiedCount}</h3>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Queue List */}
         <Card className="shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
             <div>
-              <CardTitle>Draft Claims Queue</CardTitle>
+              <CardTitle>Claims Queue</CardTitle>
               <CardDescription>Claims collected by AI pending human verification</CardDescription>
             </div>
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
+                data-testid="input-search-claims"
                 placeholder="Search ID or Name..."
                 className="pl-9 bg-muted/50"
                 value={searchTerm}
@@ -198,15 +209,19 @@ export default function AdminDashboard() {
               />
             </div>
           </CardHeader>
+
           <div className="divide-y divide-border">
-            {filteredClaims.length === 0 ? (
+            {isLoading ? (
+              <div className="p-8 text-center text-muted-foreground">Loading claims...</div>
+            ) : filteredClaims.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
-                No claims found matching your criteria.
+                No claims found. Claims submitted via the chatbot will appear here.
               </div>
             ) : (
               filteredClaims.map((claim) => (
-                <div 
-                  key={claim.id} 
+                <div
+                  key={claim.id}
+                  data-testid={`row-claim-${claim.id}`}
                   className={`p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-muted/30 transition-colors cursor-pointer ${
                     claim.priority === "High" && claim.status === "Draft" ? "bg-destructive/5 hover:bg-destructive/10" : ""
                   }`}
@@ -239,13 +254,14 @@ export default function AdminDashboard() {
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground flex items-center gap-3">
-                        <span className="flex items-center gap-1"><User className="h-3 w-3"/> {claim.policyholderName}</span>
-                        <span className="hidden sm:flex items-center gap-1"><Calendar className="h-3 w-3"/> {new Date(claim.date).toLocaleDateString()}</span>
-                        <span className="hidden md:inline text-xs bg-muted px-1.5 rounded text-muted-foreground">Collected by: {claim.collectedBy}</span>
+                        <span className="flex items-center gap-1"><User className="h-3 w-3" /> {claim.policyholderName}</span>
+                        <span className="hidden sm:flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(claim.date).toLocaleDateString()}</span>
+                        <span className="hidden md:inline text-xs bg-muted px-1.5 rounded text-muted-foreground">
+                          Collected by: {claim.collectedBy}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  
                   <Button variant={claim.status === "Verified" ? "outline" : "default"} size="sm" className="w-full sm:w-auto">
                     {claim.status === "Verified" ? "View Record" : "Review & Verify"}
                   </Button>
@@ -259,15 +275,17 @@ export default function AdminDashboard() {
       {/* Verification Modal */}
       <Dialog open={!!selectedClaim} onOpenChange={(open) => !open && setSelectedClaim(null)}>
         {selectedClaim && (
-          <DialogContent className="max-w-2xl bg-card border-border p-0 overflow-hidden">
+          <DialogContent className="max-w-4xl bg-card border-border p-0 overflow-hidden">
             <div className={`h-2 w-full ${selectedClaim.status === "Verified" ? "bg-green-500" : selectedClaim.priority === "High" ? "bg-destructive" : "bg-primary"}`} />
-            
+
             <DialogHeader className="p-6 pb-2">
               <div className="flex justify-between items-start">
                 <div>
                   <DialogTitle className="text-2xl flex items-center gap-2">
                     {selectedClaim.id}
-                    {selectedClaim.status === "Verified" && <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">Verified</Badge>}
+                    {selectedClaim.status === "Verified" && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">Verified</Badge>
+                    )}
                   </DialogTitle>
                   <DialogDescription className="mt-1">
                     Date Submitted: {new Date(selectedClaim.date).toLocaleString()}
@@ -279,10 +297,10 @@ export default function AdminDashboard() {
               </div>
             </DialogHeader>
 
-            <div className="p-6 pt-0 flex flex-col lg:flex-row gap-6">
+            <div className="p-6 pt-0 flex flex-col lg:flex-row gap-6 max-h-[70vh] overflow-y-auto">
               {/* Left Column: Claim Details */}
               <div className="flex-1 space-y-6">
-                {/* AI Summary Section */}
+                {/* AI Summary */}
                 <div className="bg-muted/50 rounded-lg p-5 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-semibold text-primary flex items-center gap-2">
@@ -306,50 +324,55 @@ export default function AdminDashboard() {
                   </ul>
                 </div>
 
-                {/* Raw Data Form */}
+                {/* Editable Fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Policyholder Name</label>
-                    <Input 
-                      value={isEditing ? editData.policyholderName : selectedClaim.policyholderName} 
-                      readOnly={!isEditing} 
-                      onChange={(e) => setEditData({...editData, policyholderName: e.target.value})}
-                      className={isEditing ? "bg-background border-primary" : "bg-card"} 
+                    <Input
+                      data-testid="input-policyholder-name"
+                      value={isEditing ? (editData.policyholderName ?? "") : selectedClaim.policyholderName}
+                      readOnly={!isEditing}
+                      onChange={(e) => setEditData({ ...editData, policyholderName: e.target.value })}
+                      className={isEditing ? "bg-background border-primary" : "bg-card"}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Policy ID</label>
-                    <Input 
-                      value={isEditing ? editData.policyId : selectedClaim.policyId} 
-                      readOnly={!isEditing} 
-                      onChange={(e) => setEditData({...editData, policyId: e.target.value})}
-                      className={isEditing ? "bg-background border-primary" : "bg-card"} 
+                    <Input
+                      data-testid="input-policy-id"
+                      value={isEditing ? (editData.policyId ?? "") : selectedClaim.policyId}
+                      readOnly={!isEditing}
+                      onChange={(e) => setEditData({ ...editData, policyId: e.target.value })}
+                      className={isEditing ? "bg-background border-primary" : "bg-card"}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type of Claim</label>
-                    <Input 
-                      value={isEditing ? editData.claimType : selectedClaim.claimType} 
-                      readOnly={!isEditing} 
-                      onChange={(e) => setEditData({...editData, claimType: e.target.value})}
-                      className={isEditing ? "bg-background border-primary" : "bg-card"} 
+                    <Input
+                      data-testid="input-claim-type"
+                      value={isEditing ? (editData.claimType ?? "") : selectedClaim.claimType}
+                      readOnly={!isEditing}
+                      onChange={(e) => setEditData({ ...editData, claimType: e.target.value })}
+                      className={isEditing ? "bg-background border-primary" : "bg-card"}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Incident Date/Time</label>
-                    <Input 
-                      value={isEditing ? editData.incidentDate : selectedClaim.incidentDate} 
-                      readOnly={!isEditing} 
-                      onChange={(e) => setEditData({...editData, incidentDate: e.target.value})}
-                      className={isEditing ? "bg-background border-primary" : "bg-card"} 
+                    <Input
+                      data-testid="input-incident-date"
+                      value={isEditing ? (editData.incidentDate ?? "") : selectedClaim.incidentDate}
+                      readOnly={!isEditing}
+                      onChange={(e) => setEditData({ ...editData, incidentDate: e.target.value })}
+                      className={isEditing ? "bg-background border-primary" : "bg-card"}
                     />
                   </div>
                   <div className="col-span-2 space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Description</label>
                     {isEditing ? (
-                      <Textarea 
-                        value={editData.description} 
-                        onChange={(e) => setEditData({...editData, description: e.target.value})}
+                      <Textarea
+                        data-testid="input-description"
+                        value={editData.description ?? ""}
+                        onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                         className="bg-background border-primary min-h-[80px]"
                       />
                     ) : (
@@ -362,11 +385,12 @@ export default function AdminDashboard() {
 
                 {isEditing && (
                   <div className="flex justify-end gap-2 pt-2">
-                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} disabled={updateMutation.isPending}>
                       <X className="h-4 w-4 mr-1" /> Cancel
                     </Button>
-                    <Button size="sm" onClick={handleSaveEdit}>
-                      <Save className="h-4 w-4 mr-1" /> Save Changes
+                    <Button size="sm" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
+                      <Save className="h-4 w-4 mr-1" />
+                      {updateMutation.isPending ? "Saving..." : "Save Changes"}
                     </Button>
                   </div>
                 )}
@@ -374,53 +398,75 @@ export default function AdminDashboard() {
                 {/* Audit Trail */}
                 <div className="text-xs text-muted-foreground flex items-center justify-between border-t pt-4">
                   <span className="flex items-center gap-1">
-                    <Bot className="h-3 w-3"/> Collected by: {selectedClaim.collectedBy}
+                    <Bot className="h-3 w-3" /> Collected by: {selectedClaim.collectedBy}
                   </span>
                   {selectedClaim.status === "Verified" && (
                     <span className="flex items-center gap-1 text-green-600 font-medium">
-                      <CheckCircle2 className="h-3 w-3"/> Verified by: {selectedClaim.verifiedBy}
+                      <CheckCircle2 className="h-3 w-3" /> Verified by: {selectedClaim.verifiedBy}
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Right Column: Mini Chatbot */}
-              <div className="lg:w-80 flex flex-col border rounded-lg overflow-hidden bg-card h-[500px]">
+              <div className="lg:w-80 flex flex-col border rounded-lg overflow-hidden bg-card" style={{ minHeight: "400px" }}>
                 <div className="bg-primary/10 p-3 border-b flex items-center gap-2">
                   <Bot className="h-5 w-5 text-primary" />
                   <div>
                     <h4 className="text-sm font-semibold text-foreground">Claim Assistant</h4>
-                    <p className="text-[10px] text-muted-foreground">Ask about this specific claim</p>
+                    <p className="text-[10px] text-muted-foreground">AI-powered, claim-specific answers</p>
                   </div>
                 </div>
-                
-                <div 
+
+                <div
                   ref={chatScrollRef}
                   className="flex-1 overflow-y-auto p-3 space-y-4 bg-muted/20 text-sm"
+                  style={{ height: "320px" }}
                 >
                   {chatHistory.map((msg, idx) => (
-                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`px-3 py-2 rounded-lg max-w-[85%] ${
-                        msg.role === 'user' 
-                          ? 'bg-primary text-primary-foreground rounded-tr-none' 
-                          : 'bg-card border shadow-sm rounded-tl-none'
-                      }`}>
+                    <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`px-3 py-2 rounded-lg max-w-[85%] ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-tr-none"
+                            : "bg-card border shadow-sm rounded-tl-none"
+                        }`}
+                      >
                         {msg.content}
                       </div>
                     </div>
                   ))}
+                  {isChatLoading && (
+                    <div className="flex justify-start">
+                      <div className="px-3 py-2 rounded-lg bg-card border shadow-sm rounded-tl-none">
+                        <div className="flex gap-1.5 items-center">
+                          <span className="h-1.5 w-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0ms]" />
+                          <span className="h-1.5 w-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:150ms]" />
+                          <span className="h-1.5 w-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:300ms]" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
+
                 <div className="p-3 bg-card border-t">
                   <div className="flex gap-2">
-                    <Input 
+                    <Input
+                      data-testid="input-claim-chat"
                       value={chatMessage}
                       onChange={(e) => setChatMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                      placeholder="Ask a question..."
+                      onKeyDown={(e) => e.key === "Enter" && handleChatSend()}
+                      placeholder="Ask about this claim..."
                       className="h-8 text-sm bg-muted/50"
+                      disabled={isChatLoading}
                     />
-                    <Button size="icon" className="h-8 w-8 shrink-0" onClick={handleChatSend}>
+                    <Button
+                      data-testid="button-send-claim-chat"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      onClick={handleChatSend}
+                      disabled={isChatLoading || !chatMessage.trim()}
+                    >
                       <Send className="h-3 w-3" />
                     </Button>
                   </div>
@@ -431,9 +477,14 @@ export default function AdminDashboard() {
             {selectedClaim.status !== "Verified" && (
               <DialogFooter className="p-4 bg-muted/30 border-t sm:justify-between flex-row">
                 <Button variant="ghost" onClick={() => setSelectedClaim(null)}>Cancel</Button>
-                <Button onClick={handleVerify} className="gap-2">
+                <Button
+                  data-testid="button-verify-claim"
+                  onClick={handleVerify}
+                  className="gap-2"
+                  disabled={verifyMutation.isPending}
+                >
                   <CheckCircle2 className="h-4 w-4" />
-                  Verify & Submit
+                  {verifyMutation.isPending ? "Verifying..." : "Verify & Submit"}
                 </Button>
               </DialogFooter>
             )}
