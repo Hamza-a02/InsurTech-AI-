@@ -153,12 +153,9 @@ export default function ClaimChat() {
 
   const handleRequestHuman = () => {
     toast({
-      title: "Human Requested",
-      description: "An adjuster has been notified and will join the chat shortly.",
+      title: "Adjuster Notified",
+      description: "An adjuster will join the chat shortly. Please stand by.",
     });
-    setTimeout(() => {
-      addBotMessage("[SYSTEM]: Adjuster 'Sarah Jenkins' has joined the chat.");
-    }, 2000);
   };
 
   const isDisabled =
