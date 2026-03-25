@@ -78,20 +78,36 @@ async function generateAdjusterAnswer(question: string, claim: Record<string, un
       messages: [
         {
           role: "system",
-          content: `You are a claims assistant for Alberta insurance adjusters. You have access ONLY to the following claim data. Answer questions strictly based on this data.
-If the answer is not in the claim data, respond exactly with: "Not enough info in the current claim draft. Please call the client to get more info."
-Keep answers concise and professional.
+          content: `You are a claims assistant for Alberta insurance adjusters. Answer questions by following this strict priority order:
+
+STEP 1 — Claim data first:
+Answer using only the claim data below. Be concise and professional.
+
+STEP 2 — Alberta or Canadian law (only if the claim data does not address the topic):
+If the claim data is silent but a specific Alberta or Canadian law applies, cite that law by its full official name and explain how it applies to the adjuster's situation. Relevant laws include (but are not limited to):
+- Insurance Act (Alberta), RSA 2000, c I-3 — governing insurance contracts, claim obligations, limitation periods
+- Traffic Safety Act (Alberta), RSA 2000, c T-6 — accident reporting thresholds, police involvement requirements
+- Limitations Act (Alberta), RSA 2000, c L-12 — 2-year limitation period for filing an insurance claim
+- Alberta Standard Automobile Policy (SPF No. 1) — statutory policy terms applicable to all Alberta auto policies
+- Statutory Conditions under the Alberta Insurance Act — mandatory obligations of both insurer and insured
+- Automobile Insurance Rate Board (AIRB) Regulations — claim impact on premiums, DCPD rules
+- Criminal Code of Canada, RSC 1985, c C-46 — fraud, impaired driving, criminal liability affecting claim validity
+- Personal Information Protection Act (Alberta) PIPA, SA 2003, c P-6.5 — data handling requirements in claim processing
+When citing a law, state its full name and explain what it means for the adjuster handling this specific claim.
+
+STEP 3 — Refer to contact (only if neither the claim data nor any applicable law can answer):
+Respond with: "Not enough info in the current claim draft. Please call the client or consult your senior adjuster to get more info."
 
 Claim Data:
 ${JSON.stringify(claim, null, 2)}`,
         },
         { role: "user", content: question },
       ],
-      max_completion_tokens: 256,
+      max_completion_tokens: 512,
     });
-    return response.choices[0]?.message?.content ?? "Not enough info in the current claim draft. Please call the client to get more info.";
+    return response.choices[0]?.message?.content ?? "Not enough info in the current claim draft. Please call the client or consult your senior adjuster to get more info.";
   } catch {
-    return "Not enough info in the current claim draft. Please call the client to get more info.";
+    return "Not enough info in the current claim draft. Please call the client or consult your senior adjuster to get more info.";
   }
 }
 
@@ -102,20 +118,39 @@ async function generatePolicyAnswer(question: string, policyText: string): Promi
       messages: [
         {
           role: "system",
-          content: `You are an Alberta insurance policy assistant. You ONLY answer questions based on the uploaded policy document text provided. 
-If the policy text does not contain the answer, respond: "Based on the document provided, I can't find specific information about that. I recommend speaking directly with an agent to get a precise answer. Would you like me to connect you?"
-Keep answers concise and helpful. Quote relevant policy language when available.`,
+          content: `You are an Alberta insurance policy assistant for Desjardins/Certas. Answer questions by following this strict priority order:
+
+STEP 1 — Policy document first:
+Answer based solely on the policy document provided. Quote relevant policy language when it directly applies.
+
+STEP 2 — Alberta or Canadian law (only if the policy document does not address the topic):
+If the policy is silent on the topic but a specific Alberta or Canadian law applies, cite that law by its full official name and explain how it applies. Relevant laws include (but are not limited to):
+- Insurance Act (Alberta), RSA 2000, c I-3 — governs all insurance contracts in Alberta
+- Traffic Safety Act (Alberta), RSA 2000, c T-6 — road use, accident reporting obligations
+- Limitations Act (Alberta), RSA 2000, c L-12 — 2-year limitation period for insurance claims
+- Alberta Standard Automobile Policy (SPF No. 1) — approved by the Alberta Superintendent of Insurance
+- Automobile Insurance Rate Board (AIRB) regulations — rate and coverage rules
+- Personal Information Protection Act (Alberta) PIPA, SA 2003, c P-6.5 — privacy and data rights
+- Criminal Code of Canada, RSC 1985, c C-46 — impaired driving, fraud, offences affecting claims
+- Canada Road Safety Act — federal road safety obligations
+- Statutory Conditions under the Alberta Insurance Act — mandatory policy conditions applying to all Alberta auto policies
+When citing a law, clearly state the law name, and explain in plain language what it means for the policyholder's situation.
+
+STEP 3 — Refer to agent (only if neither the policy nor any applicable law can answer):
+Respond with: "This isn't addressed in your policy document and falls outside the scope of standard Alberta legislation. For a definitive answer, please contact your agent, Anita Ip, at 587-353-7500 or visit the office at 220-1220 Kensington Rd NW, Calgary AB T2N 3P5."
+
+Keep all responses concise and in plain language. Never speculate or invent policy terms.`,
         },
         {
           role: "user",
           content: `Policy Document:\n${policyText}\n\nQuestion: ${question}`,
         },
       ],
-      max_completion_tokens: 512,
+      max_completion_tokens: 600,
     });
-    return response.choices[0]?.message?.content ?? "Based on the document provided, I can't find specific information about that. I recommend speaking directly with an agent.";
+    return response.choices[0]?.message?.content ?? "This isn't addressed in your policy document. For a definitive answer, please contact your agent, Anita Ip, at 587-353-7500.";
   } catch {
-    return "Based on the document provided, I can't find specific information about that. I recommend speaking directly with an agent.";
+    return "This isn't addressed in your policy document. For a definitive answer, please contact your agent, Anita Ip, at 587-353-7500.";
   }
 }
 
