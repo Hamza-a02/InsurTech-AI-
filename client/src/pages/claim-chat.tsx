@@ -24,7 +24,7 @@ export default function ClaimChat() {
       id: "1",
       role: "bot",
       content:
-        "Hello, I'm the Alberta Insurance Claims Specialist. My goal is to help you document an accident for your insurer.\n\nTo begin, please tell me about the incident using the 5 Ws: Who was involved, What happened, Where did it happen, When did it occur, and Why do you think it happened?",
+        "Hello, I'm the Alberta Insurance Claims Specialist. I'm here to help you document an incident for your insurer.\n\nTo get started, please describe what happened. Make sure to cover:\n• Who was involved\n• What happened\n• Where it happened\n• When it happened",
     },
   ]);
 
@@ -33,6 +33,7 @@ export default function ClaimChat() {
   const [isBotTyping, setIsBotTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [fnolDescription, setFnolDescription] = useState("");
   const [claimData, setClaimData] = useState({
     policyholderName: "Pending User Info",
     policyId: "Pending Policy ID",
@@ -46,6 +47,13 @@ export default function ClaimChat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isBotTyping]);
+
+  const addBotMessage = (content: string) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), role: "bot", content },
+    ]);
+  };
 
   const createClaimMutation = useMutation({
     mutationFn: async (data: {
@@ -61,49 +69,80 @@ export default function ClaimChat() {
     },
   });
 
-  const addBotMessage = (content: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), role: "bot", content },
-    ]);
-  };
+  const validateFnolMutation = useMutation({
+    mutationFn: async (description: string) => {
+      const res = await apiRequest("POST", "/api/claims/validate-fnol", { description });
+      return res.json() as Promise<{ sufficient: boolean; followUp?: string }>;
+    },
+  });
 
   const handleSend = () => {
-    if (!inputValue.trim() || isBotTyping) return;
+    if (!inputValue.trim() || isBotTyping || validateFnolMutation.isPending || createClaimMutation.isPending) return;
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: inputValue,
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+    const userContent = inputValue;
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), role: "user", content: userContent },
+    ]);
     setInputValue("");
-    setIsBotTyping(true);
 
+    if (currentStep === "FIVE_WS") {
+      const accumulatedDesc = fnolDescription
+        ? `${fnolDescription} ${userContent}`
+        : userContent;
+      setFnolDescription(accumulatedDesc);
+      setIsBotTyping(true);
+
+      validateFnolMutation.mutate(accumulatedDesc, {
+        onSuccess: (result) => {
+          setIsBotTyping(false);
+          if (result.sufficient) {
+            const updatedData = {
+              ...claimData,
+              description: accumulatedDesc,
+              incidentDate: new Date().toLocaleDateString(),
+            };
+            setClaimData(updatedData);
+            setCurrentStep("ALBERTA_RULES");
+            addBotMessage(
+              "Thank you — that's enough to start your report.\n\nA couple of Alberta-specific things to confirm:\n\n• Did the total damage exceed $5,000? If so, you are required to obtain a police sticker.\n• Under Alberta's Direct Compensation for Property Damage (DCPD) program, you deal directly with your own insurer for vehicle damage, even if you were not at fault.\n\nDid you obtain a police sticker, or was the damage minor?"
+            );
+          } else {
+            addBotMessage(
+              result.followUp ??
+                "Could you add a bit more detail? Please make sure to mention who was involved, what happened, where it occurred, and when."
+            );
+          }
+        },
+        onError: () => {
+          setIsBotTyping(false);
+          const updatedData = {
+            ...claimData,
+            description: accumulatedDesc,
+            incidentDate: new Date().toLocaleDateString(),
+          };
+          setClaimData(updatedData);
+          setCurrentStep("ALBERTA_RULES");
+          addBotMessage(
+            "Thank you. A couple of Alberta-specific reminders before we continue:\n\n• If total damage exceeded $5,000, you must obtain a police sticker.\n• Under DCPD, you deal with your own insurer even if you were not at fault.\n\nDid you get a police sticker, or is the damage minor?"
+          );
+        },
+      });
+      return;
+    }
+
+    setIsBotTyping(true);
     setTimeout(() => {
-      processNextStep(userMsg.content);
+      processStep(currentStep, userContent);
       setIsBotTyping(false);
     }, 800);
   };
 
-  const processNextStep = (input: string) => {
-    const updatedData = { ...claimData };
-
-    switch (currentStep) {
-      case "FIVE_WS":
-        updatedData.description = input;
-        updatedData.incidentDate = new Date().toLocaleDateString();
-        setClaimData(updatedData);
-        addBotMessage(
-          "Thank you. Did the total damage exceed $5,000?\n\nIf so, a quick reminder of Alberta requirements: you MUST get a police sticker.\n\nAlso, under the Direct Compensation for Property Damage (DCPD) program, you will deal with your own insurer for vehicle damage, even if you are not at fault. Did you get a police sticker or is the damage minor?"
-        );
-        setCurrentStep("ALBERTA_RULES");
-        break;
-
+  const processStep = (step: ClaimStep, input: string) => {
+    switch (step) {
       case "ALBERTA_RULES":
         addBotMessage(
-          "Understood. Finally, please ensure you have the following essential information to share:\n\n1. Photos of the scene and any dashcam footage.\n2. Contact information for any witnesses.\n3. The 'Section A' (Third Party Liability) details of the other driver involved.\n\nHave you collected all of these details, and is there anything else you'd like to add before I submit your report?"
+          "Understood. Before I submit your report, please make sure you have the following:\n\n1. Photos of the scene and any dashcam footage.\n2. Contact information for any witnesses.\n3. The other driver's insurance details (Section A — Third Party Liability).\n\nHave you collected this information? Feel free to add anything else relevant before I submit."
         );
         setCurrentStep("ESSENTIAL_INFO");
         break;
@@ -111,32 +150,30 @@ export default function ClaimChat() {
       case "ESSENTIAL_INFO": {
         setCurrentStep("CONFIRMATION");
 
-        const isHighPriority =
-          (updatedData.description + " " + input)
-            .toLowerCase()
-            .match(/lawyer|legal|sue|suing|injury|hospital|lawsuit|bodily/) !== null;
+        const fullText = (claimData.description + " " + input).toLowerCase();
+        const isHighPriority = /lawyer|legal|sue|suing|injury|hospital|lawsuit|bodily/.test(fullText);
 
         const finalData = {
-          ...updatedData,
+          ...claimData,
           priority: isHighPriority ? ("High" as const) : ("Normal" as const),
         };
 
         createClaimMutation.mutate(finalData, {
           onSuccess: () => {
             addBotMessage(
-              "Thank you. I have collected all the necessary information. Let me summarize your report:\n\n" +
+              "Thank you. Your report has been submitted for adjuster review. Here's a summary:\n\n" +
                 `• Type: Auto Claim (Alberta Jurisdiction)\n` +
                 `• Date Reported: ${finalData.incidentDate}\n` +
-                `• Initial Description: ${finalData.description.substring(0, 80)}...\n\n` +
+                `• Description: ${finalData.description.substring(0, 100)}...\n\n` +
                 (isHighPriority
-                  ? "⚠️ Your case has been flagged as HIGH PRIORITY due to potential injury or legal involvement. An adjuster will contact you urgently.\n\n"
+                  ? "⚠️ Your case has been flagged as HIGH PRIORITY due to potential injury or legal involvement. An adjuster will be in touch urgently.\n\n"
                   : "") +
-                "Your claim has been submitted as a draft for an adjuster to review. An adjuster will contact you soon to finalize your details. Is there anything else you need?"
+                "An adjuster will contact you soon to finalize the details. Is there anything else you need?"
             );
           },
           onError: () => {
             addBotMessage(
-              "Your information has been noted. However, there was an issue saving the claim to our system. Please call us directly to complete the report."
+              "Your information has been noted. There was an issue saving to our system — please call us directly to complete the report."
             );
           },
         });
@@ -145,8 +182,11 @@ export default function ClaimChat() {
 
       case "CONFIRMATION":
         addBotMessage(
-          "Your session has been recorded. If you need immediate assistance, please use the 'Request Human' button above."
+          "Your session has been recorded. If you need immediate help, use the 'Request Human' button above."
         );
+        break;
+
+      default:
         break;
     }
   };
@@ -161,11 +201,12 @@ export default function ClaimChat() {
   const isDisabled =
     currentStep === "CONFIRMATION" ||
     isBotTyping ||
+    validateFnolMutation.isPending ||
     createClaimMutation.isPending;
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <header className="flex items-center justify-between p-4 border-b border-border bg-card shadow-sm z-10">
+      <header className="flex items-center justify-between p-4 border-b border-border bg-card shadow-sm z-10 flex-shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
             <ArrowLeft className="h-5 w-5" />
@@ -190,6 +231,7 @@ export default function ClaimChat() {
           variant="destructive"
           size="sm"
           onClick={handleRequestHuman}
+          data-testid="button-request-human"
           className="gap-2 font-medium"
         >
           <Phone className="h-4 w-4" />
@@ -199,7 +241,7 @@ export default function ClaimChat() {
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/30"
+        className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/30 min-h-0"
       >
         <div className="max-w-3xl mx-auto space-y-6">
           {messages.map((msg) => (
@@ -231,7 +273,7 @@ export default function ClaimChat() {
             </div>
           ))}
 
-          {(isBotTyping || createClaimMutation.isPending) && (
+          {isDisabled && messages[messages.length - 1]?.role === "user" && (
             <div className="flex gap-4 justify-start">
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
                 <Bot className="h-4 w-4 text-white" />
@@ -248,14 +290,18 @@ export default function ClaimChat() {
         </div>
       </div>
 
-      <div className="p-4 border-t border-border bg-card">
+      <div className="p-4 border-t border-border bg-card flex-shrink-0">
         <div className="max-w-3xl mx-auto flex gap-3">
           <Input
             data-testid="input-claim-message"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !isDisabled && handleSend()}
-            placeholder={isDisabled ? "Claim submitted..." : "Type your message..."}
+            placeholder={
+              currentStep === "CONFIRMATION"
+                ? "Claim submitted."
+                : "Type your message..."
+            }
             className="flex-1 bg-muted/50 border-transparent focus-visible:ring-primary shadow-inner"
             disabled={isDisabled}
           />

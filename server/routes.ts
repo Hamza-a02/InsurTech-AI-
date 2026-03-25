@@ -36,6 +36,41 @@ Return ONLY a JSON array like: ["Point 1", "Point 2", "FLAG: Potential legal inv
   }
 }
 
+async function validateFnolDescription(description: string): Promise<{ sufficient: boolean; followUp?: string }> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5.1",
+      messages: [
+        {
+          role: "system",
+          content: `You are an Alberta insurance FNOL intake specialist. Evaluate whether a claimant's incident description contains enough detail to begin a claim.
+
+A sufficient description must include ALL of the following:
+1. WHO was involved (e.g., other driver, pedestrian, parked car, animal — not just "I")
+2. WHAT happened (specific type of incident: rear-end collision, side-swipe, hit parked car, etc.)
+3. WHERE it happened (e.g., specific road, intersection, parking lot, city)
+4. WHEN it happened (approximate date and/or time)
+
+Return JSON only in this exact format:
+- If sufficient: {"sufficient": true}
+- If insufficient: {"sufficient": false, "followUp": "<a single, conversational follow-up question asking only for the specific missing information>"}
+
+Be strict. Vague phrases like "I got hit", "there was an accident", or "someone hit my car" are NOT sufficient — they're missing most details. Do not move forward until all four elements are present.`,
+        },
+        {
+          role: "user",
+          content: description,
+        },
+      ],
+      max_completion_tokens: 200,
+    });
+    const content = response.choices[0]?.message?.content ?? '{"sufficient": false, "followUp": "Could you provide more details about the incident — who was involved, what exactly happened, where it occurred, and when?"}';
+    return JSON.parse(content);
+  } catch {
+    return { sufficient: true }; // fail open so the flow isn't blocked by API errors
+  }
+}
+
 async function generateAdjusterAnswer(question: string, claim: Record<string, unknown>): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
@@ -88,6 +123,19 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // POST /api/claims/validate-fnol — check if FNOL description has enough detail
+  app.post("/api/claims/validate-fnol", async (req: Request, res: Response) => {
+    try {
+      const { description } = req.body;
+      if (!description) return res.status(400).json({ message: "description is required" });
+      const result = await validateFnolDescription(description);
+      res.json(result);
+    } catch (err) {
+      console.error("POST /api/claims/validate-fnol error:", err);
+      res.status(500).json({ message: "Validation failed" });
+    }
+  });
 
   // GET /api/claims — list all claims
   app.get("/api/claims", async (_req: Request, res: Response) => {
