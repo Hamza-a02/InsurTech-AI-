@@ -121,6 +121,11 @@ export default function AdminDashboard() {
     }
   };
 
+  // A claim is high priority if stored as "High" OR if any AI summary bullet starts with "FLAG:"
+  const isHighPriority = (claim: { priority: string; summary?: string[] | null }) =>
+    claim.priority === "High" ||
+    (Array.isArray(claim.summary) && claim.summary.some((s) => s.startsWith("FLAG:")));
+
   const filteredClaims = claims.filter(
     (claim) =>
       claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -128,7 +133,7 @@ export default function AdminDashboard() {
   );
 
   const pendingClaimsCount = claims.filter((c) => c.status === "Draft").length;
-  const highPriorityCount = claims.filter((c) => c.priority === "High" && c.status === "Draft").length;
+  const highPriorityCount = claims.filter((c) => isHighPriority(c) && c.status === "Draft").length;
   const verifiedCount = claims.filter((c) => c.status === "Verified").length;
 
   return (
@@ -223,7 +228,7 @@ export default function AdminDashboard() {
                   key={claim.id}
                   data-testid={`row-claim-${claim.id}`}
                   className={`p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-muted/30 transition-colors cursor-pointer ${
-                    claim.priority === "High" && claim.status === "Draft" ? "bg-destructive/5 hover:bg-destructive/10" : ""
+                    isHighPriority(claim) && claim.status === "Draft" ? "bg-destructive/5 hover:bg-destructive/10" : ""
                   }`}
                   onClick={() => handleOpenClaim(claim)}
                 >
@@ -233,7 +238,7 @@ export default function AdminDashboard() {
                         <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
                           <CheckCircle2 className="h-5 w-5" />
                         </div>
-                      ) : claim.priority === "High" ? (
+                      ) : isHighPriority(claim) ? (
                         <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
                           <AlertTriangle className="h-5 w-5" />
                         </div>
@@ -246,7 +251,7 @@ export default function AdminDashboard() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold">{claim.id}</span>
-                        {claim.priority === "High" && (
+                        {isHighPriority(claim) && (
                           <Badge variant="destructive" className="text-[10px] h-5">High Priority</Badge>
                         )}
                         <Badge variant={claim.status === "Verified" ? "secondary" : "outline"} className="text-[10px] h-5 bg-card">
@@ -276,7 +281,7 @@ export default function AdminDashboard() {
       <Dialog open={!!selectedClaim} onOpenChange={(open) => !open && setSelectedClaim(null)}>
         {selectedClaim && (
           <DialogContent className="max-w-4xl bg-card border-border p-0 overflow-hidden">
-            <div className={`h-2 w-full ${selectedClaim.status === "Verified" ? "bg-green-500" : selectedClaim.priority === "High" ? "bg-destructive" : "bg-primary"}`} />
+            <div className={`h-2 w-full ${selectedClaim.status === "Verified" ? "bg-green-500" : isHighPriority(selectedClaim) ? "bg-destructive" : "bg-primary"}`} />
 
             <DialogHeader className="p-6 pb-2">
               <div className="flex justify-between items-start">
@@ -291,7 +296,7 @@ export default function AdminDashboard() {
                     Date Submitted: {new Date(selectedClaim.date).toLocaleString()}
                   </DialogDescription>
                 </div>
-                {selectedClaim.priority === "High" && (
+                {isHighPriority(selectedClaim) && (
                   <Badge variant="destructive" className="animate-pulse">HIGH PRIORITY</Badge>
                 )}
               </div>

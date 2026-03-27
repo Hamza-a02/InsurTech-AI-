@@ -215,11 +215,15 @@ export async function registerRoutes(
       // Generate AI summary
       const summary = await generateClaimSummary(description, claimType);
 
+      // If the AI flagged anything (injury, legal, etc.) escalate to High priority regardless of what the client sent
+      const hasFlag = summary.some((item) => item.startsWith("FLAG:"));
+      const finalPriority: "Normal" | "High" = hasFlag ? "High" : priority;
+
       const claim = await storage.createClaim({
         ...rest,
         description,
         claimType,
-        priority,
+        priority: finalPriority,
         summary,
       });
       res.status(201).json(claim);
