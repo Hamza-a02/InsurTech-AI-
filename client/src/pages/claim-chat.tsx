@@ -13,7 +13,7 @@ type Message = {
   content: string;
 };
 
-type ClaimStep = "FIVE_WS" | "ALBERTA_RULES" | "ESSENTIAL_INFO" | "CONFIRMATION";
+type ClaimStep = "FIVE_WS" | "WRAP_UP" | "CONFIRMATION";
 
 export default function ClaimChat() {
   const [, setLocation] = useLocation();
@@ -24,7 +24,7 @@ export default function ClaimChat() {
       id: "1",
       role: "bot",
       content:
-        "Hello, I'm the Alberta Insurance Claims Specialist. I'm here to help you document an incident for your insurer.\n\nTo get started, please describe what happened. Make sure to cover:\n• Who was involved\n• What happened\n• Where it happened\n• When it happened",
+        "Hello, I'm the Alberta Insurance Claims Specialist. I'm here to help you document an incident for your insurer.\n\nPlease describe what happened — who was involved, what happened, and where. If you don't mention a date or time, I'll use today's date and time automatically.",
     },
   ]);
 
@@ -97,97 +97,82 @@ export default function ClaimChat() {
         onSuccess: (result) => {
           setIsBotTyping(false);
           if (result.sufficient) {
-            const updatedData = {
-              ...claimData,
+            const now = new Date();
+            const incidentDate = `${now.toLocaleDateString("en-CA", {
+              year: "numeric", month: "long", day: "numeric",
+            })} at ${now.toLocaleTimeString("en-CA", {
+              hour: "2-digit", minute: "2-digit",
+            })}`;
+            setClaimData((prev) => ({
+              ...prev,
               description: accumulatedDesc,
-              incidentDate: new Date().toLocaleDateString(),
-            };
-            setClaimData(updatedData);
-            setCurrentStep("ALBERTA_RULES");
+              incidentDate,
+            }));
+            setCurrentStep("WRAP_UP");
             addBotMessage(
-              "Thank you — that's enough to start your report.\n\nA couple of Alberta-specific things to confirm:\n\n• Did the total damage exceed $5,000? If so, you are required to obtain a police sticker.\n• Under Alberta's Direct Compensation for Property Damage (DCPD) program, you deal directly with your own insurer for vehicle damage, even if you were not at fault.\n\nDid you obtain a police sticker, or was the damage minor?"
+              "Thanks — I have enough to file your report.\n\nA quick Alberta note: under the Direct Compensation for Property Damage (DCPD) program, you deal with your own insurer even if the other driver was at fault. If damage exceeded $5,000, a police sticker is required.\n\nIs there anything else you'd like to add before I submit?"
             );
           } else {
             addBotMessage(
               result.followUp ??
-                "Could you add a bit more detail? Please make sure to mention who was involved, what happened, where it occurred, and when."
+                "Could you add a bit more detail? Please make sure to include who was involved, what happened, and where it occurred."
             );
           }
         },
         onError: () => {
           setIsBotTyping(false);
-          const updatedData = {
-            ...claimData,
-            description: accumulatedDesc,
-            incidentDate: new Date().toLocaleDateString(),
-          };
-          setClaimData(updatedData);
-          setCurrentStep("ALBERTA_RULES");
+          const now = new Date();
+          const incidentDate = `${now.toLocaleDateString("en-CA", {
+            year: "numeric", month: "long", day: "numeric",
+          })} at ${now.toLocaleTimeString("en-CA", {
+            hour: "2-digit", minute: "2-digit",
+          })}`;
+          setClaimData((prev) => ({
+            ...prev,
+            description: fnolDescription ? `${fnolDescription} ${userContent}` : userContent,
+            incidentDate,
+          }));
+          setCurrentStep("WRAP_UP");
           addBotMessage(
-            "Thank you. A couple of Alberta-specific reminders before we continue:\n\n• If total damage exceeded $5,000, you must obtain a police sticker.\n• Under DCPD, you deal with your own insurer even if you were not at fault.\n\nDid you get a police sticker, or is the damage minor?"
+            "Thanks — I have enough to file your report.\n\nA quick Alberta note: under DCPD you deal with your own insurer even if the other driver was at fault. If damage exceeded $5,000, a police sticker is required.\n\nAnything else to add before I submit?"
           );
         },
       });
       return;
     }
 
-    setIsBotTyping(true);
-    setTimeout(() => {
-      processStep(currentStep, userContent);
-      setIsBotTyping(false);
-    }, 800);
-  };
+    if (currentStep === "WRAP_UP") {
+      setCurrentStep("CONFIRMATION");
+      const fullText = (claimData.description + " " + userContent).toLowerCase();
+      const isHighPriority = /lawyer|legal|sue|suing|injury|hospital|lawsuit|bodily/.test(fullText);
+      const finalData = {
+        ...claimData,
+        priority: isHighPriority ? ("High" as const) : ("Normal" as const),
+      };
+      createClaimMutation.mutate(finalData, {
+        onSuccess: () => {
+          addBotMessage(
+            "Your report has been submitted. Here's a summary:\n\n" +
+              `• Type: Auto Claim (Alberta Jurisdiction)\n` +
+              `• Incident Date/Time: ${finalData.incidentDate}\n` +
+              `• Description: ${finalData.description.substring(0, 120)}...\n\n` +
+              (isHighPriority
+                ? "⚠️ Flagged as HIGH PRIORITY due to potential injury or legal involvement. An adjuster will be in touch urgently.\n\n"
+                : "") +
+              "An adjuster will contact you soon to finalize the details."
+          );
+        },
+        onError: () => {
+          addBotMessage(
+            "Your information has been noted. There was an issue saving to our system — please call us directly to complete the report."
+          );
+        },
+      });
+      return;
+    }
 
-  const processStep = (step: ClaimStep, input: string) => {
-    switch (step) {
-      case "ALBERTA_RULES":
-        addBotMessage(
-          "Understood. Before I submit your report, please make sure you have the following:\n\n1. Photos of the scene and any dashcam footage.\n2. Contact information for any witnesses.\n3. The other driver's insurance details (Section A — Third Party Liability).\n\nHave you collected this information? Feel free to add anything else relevant before I submit."
-        );
-        setCurrentStep("ESSENTIAL_INFO");
-        break;
-
-      case "ESSENTIAL_INFO": {
-        setCurrentStep("CONFIRMATION");
-
-        const fullText = (claimData.description + " " + input).toLowerCase();
-        const isHighPriority = /lawyer|legal|sue|suing|injury|hospital|lawsuit|bodily/.test(fullText);
-
-        const finalData = {
-          ...claimData,
-          priority: isHighPriority ? ("High" as const) : ("Normal" as const),
-        };
-
-        createClaimMutation.mutate(finalData, {
-          onSuccess: () => {
-            addBotMessage(
-              "Thank you. Your report has been submitted for adjuster review. Here's a summary:\n\n" +
-                `• Type: Auto Claim (Alberta Jurisdiction)\n` +
-                `• Date Reported: ${finalData.incidentDate}\n` +
-                `• Description: ${finalData.description.substring(0, 100)}...\n\n` +
-                (isHighPriority
-                  ? "⚠️ Your case has been flagged as HIGH PRIORITY due to potential injury or legal involvement. An adjuster will be in touch urgently.\n\n"
-                  : "") +
-                "An adjuster will contact you soon to finalize the details. Is there anything else you need?"
-            );
-          },
-          onError: () => {
-            addBotMessage(
-              "Your information has been noted. There was an issue saving to our system — please call us directly to complete the report."
-            );
-          },
-        });
-        break;
-      }
-
-      case "CONFIRMATION":
-        addBotMessage(
-          "Your session has been recorded. If you need immediate help, use the 'Request Human' button above."
-        );
-        break;
-
-      default:
-        break;
+    if (currentStep === "CONFIRMATION") {
+      addBotMessage("Your session has been recorded. If you need immediate help, use the 'Request Human' button above.");
     }
   };
 
