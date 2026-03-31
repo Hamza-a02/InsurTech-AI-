@@ -19,58 +19,58 @@ type Message = {
 };
 
 const POLICY_CONTEXT = `
-DESJARDINS AUTO INSURANCE POLICY — Z6023FK0
-Insured: Afshan Aamir & Hamza Aamir, 66 Royal Highland Rd NW, Calgary AB T3G 4Y4
-Policy Period: 2025-11-28 to 2026-11-28
+DESJARDINS AUTO INSURANCE POLICY — Q4817RX9
+Insured: Afshan Aamir & Hamza Aamir, 142 Crestmont Dr SW, Calgary AB T3B 5Y4
+Policy Period: 2025-08-15 to 2026-08-15
 Insurer: Certas Home and Auto Insurance Company (Desjardins)
 Agent: Anita Ip Insurance And Financial Services Limited, 587-353-7500, anita.ip@desjardins.com
-Annual Premium: $7,717.00 | Monthly Payment: $643.09 via pre-authorized debit
+Annual Premium: $6,482.00 | Monthly Payment: $540.17 via pre-authorized debit
 Claims Line: 1-855-209-9549
 
-VEHICLE 1: 2023 Ford Escape PHEV 4D 2X4
-VIN: 1FMCU0E11PUB28765 | Purchased: 2023-12, New
+VEHICLE 1: 2022 Toyota RAV4 Hybrid XLE AWD
+VIN: 2T3RWRFV4NW248153 | Purchased: 2022-09, New
 Registered Owner: Afshan Aamir & Hamza Aamir
-Lienholder: Ford Credit of Canada, Edmonton AB
-Annual KM: 20,000 | Business KM: 10,000
+Lienholder: TD Auto Finance, 1 TD Place, Edmonton AB T5J 2Z1
+Annual KM: 18,000 | Business KM: 8,000
 Parking: Private garage
 Discounts: 10% Hybrid Vehicle, 10% Multi-Vehicle, 25% Occasional Driver, 5% Winter Tires
-Vehicle Premium: $4,214
+Vehicle Premium: $3,618
 
 VEHICLE 1 COVERAGE:
-- Section A Third Party Liability: $1,000,000 limit (BI premium $1,863 + Occ $90; PD included)
-- Section B Accident Benefits: As per policy (premium $287 + Occ $42)
-- Section A.1 DCPD (Direct Compensation for Property Damage): $0 deductible (premium $410 + Occ $70)
-- Section C - Collision: $1,000 deductible (premium $589 + Occ $96)
-- Section C - Comprehensive: $1,000 deductible (premium $328)
+- Section A Third Party Liability: $1,000,000 limit (BI premium $1,542 + Occ $78; PD included)
+- Section B Accident Benefits: As per policy (premium $248 + Occ $36)
+- Section A.1 DCPD (Direct Compensation for Property Damage): $0 deductible (premium $352 + Occ $61)
+- Section C - Collision: $1,000 deductible (premium $504 + Occ $82)
+- Section C - Comprehensive: $1,000 deductible (premium $281)
 - Section C - All Perils: Included (combines Collision + Comprehensive)
 - Section C - Specified Perils: Included
-- CAE #1 Endorsement: 5-Year New Vehicle Protection (premium $326 + Occ $41)
+- CAE #1 Endorsement: 5-Year New Vehicle Protection (premium $282 + Occ $35)
 - Trouble-Free Option: Applicable
-- AB-S.E.F. 13(D) Limitation of Glass Coverage: GLASS IS EXCLUDED (saves -$8 premium)
+- AB-S.E.F. 13(D) Limitation of Glass Coverage: GLASS IS EXCLUDED (saves -$7 premium)
 - AB-S.E.F. 20 Loss of Use: $1,500 limit — Included
 - AB-S.E.F. 35 Emergency Service Expense: Included
 
-VEHICLE 2: 2023 Ford Mustang Mach-E Premium 300A 4D AWD
-VIN: 3FMTK3SU5PMA27769 | Purchased: 2023-06, New
+VEHICLE 2: 2022 Tesla Model 3 Long Range AWD
+VIN: 5YJ3E1EA8NF187432 | Purchased: 2022-04, New
 Registered Owner: Afshan Aamir
-Lienholder: The Bank of Nova Scotia, Toronto ON
-Annual KM: 25,000
+Lienholder: Royal Bank of Canada, 200 Bay Street, Toronto ON M5J 2J5
+Annual KM: 22,000
 Parking: Private garage
 Discounts: 10% Electric Vehicle, 10% Multi-Vehicle, 25% Occasional Driver, 5% Winter Tires
-Vehicle Premium: $3,473
+Vehicle Premium: $2,834
 NOTE: Higher deductibles apply due to make/model.
 
 VEHICLE 2 COVERAGE:
-- Section A Third Party Liability: $1,000,000 limit (BI premium $884 + Occ $110; PD included)
-- Section B Accident Benefits: As per policy (premium $374 + Occ $64)
-- Section A.1 DCPD: $0 deductible (premium $191 + Occ $80)
-- Section C - Collision: $1,000 deductible (premium $422 + Occ $130)
-- Section C - Comprehensive: $1,000 deductible (premium $600)
+- Section A Third Party Liability: $1,000,000 limit (BI premium $762 + Occ $94; PD included)
+- Section B Accident Benefits: As per policy (premium $322 + Occ $55)
+- Section A.1 DCPD: $0 deductible (premium $164 + Occ $68)
+- Section C - Collision: $1,000 deductible (premium $362 + Occ $111)
+- Section C - Comprehensive: $1,000 deductible (premium $516)
 - Section C - All Perils: Included
 - Section C - Specified Perils: Included
-- CAE #1 Endorsement: 5-Year New Vehicle Protection (premium $478 + Occ $84)
+- CAE #1 Endorsement: 5-Year New Vehicle Protection (premium $414 + Occ $72)
 - Trouble-Free Option: Applicable
-- AB-S.E.F. 13(D) Limitation of Glass Coverage: GLASS IS EXCLUDED (saves -$15 premium)
+- AB-S.E.F. 13(D) Limitation of Glass Coverage: GLASS IS EXCLUDED (saves -$13 premium)
 - AB-S.E.F. 20 Loss of Use: $1,500 limit — Included
 - AB-S.E.F. 35 Emergency Service Expense: Included
 - AB-S.E.F. 39(A) At-Fault Accident Waiver: DECLINED — NOT INCLUDED
@@ -80,12 +80,12 @@ POLICY-WIDE ENDORSEMENTS:
 - AB-S.E.F. 44 Family Protection Endorsement: $1,000,000 (premium $30)
 
 DRIVERS:
-- Afshan Aamir (DOB 1976-12-30, F, Married): Licensed 2004-12. Vehicle 1: Secondary, Vehicle 2: Principal
-- Muhammad Aamir (DOB 1967-03-01, M, Married): Licensed 1991-07. Vehicle 1: Principal, Vehicle 2: Secondary. Has 1 minor conviction in past 3 years.
-- Hamza Aamir (DOB 2002-10-02, M, Single): Licensed 2023-07. Has Driver Training Certificate (DTC). Vehicle 1: Occasional, Vehicle 2: Occasional
-- Mohammad Osaid Aamir (DOB 2000-07-02, M, Single): Licensed 2023-07. Vehicle 1: Secondary, Vehicle 2: Secondary. Has 1 minor conviction.
+- Afshan Aamir (DOB 1978-04-15, F, Married): Licensed 2005-03. Vehicle 1: Secondary, Vehicle 2: Principal
+- Muhammad Aamir (DOB 1969-08-22, M, Married): Licensed 1992-05. Vehicle 1: Principal, Vehicle 2: Secondary. Has 1 minor conviction in past 3 years.
+- Hamza Aamir (DOB 2001-06-14, M, Single): Licensed 2022-09. Has Driver Training Certificate (DTC). Vehicle 1: Occasional, Vehicle 2: Occasional
+- Mohammad Osaid Aamir (DOB 1999-11-03, M, Single): Licensed 2022-09. Vehicle 1: Secondary, Vehicle 2: Secondary. Has 1 minor conviction.
 
-CHARGEABLE CLAIMS: 2021-10-06 Collision; 2019-12-08 Accident Benefits + Collision; 2016-11-18 Collision
+CHARGEABLE CLAIMS: 2022-03-14 Collision; 2020-07-29 Accident Benefits + Collision; 2018-02-05 Collision
 
 GOOD DRIVER RATE CAP NOTE:
 - Vehicle 1: Does NOT qualify for the good driver rate cap (exemption applies — premium increase may exceed 7.5% cap)
@@ -97,11 +97,11 @@ GLASS COVERAGE NOTE: Both vehicles have AB-S.E.F. 13(D) — glass damage is expl
 const vehicles = [
   {
     id: 1,
-    year: "2023",
-    make: "Ford Escape",
-    model: "PHEV 4D 2X4",
-    vin: "1FMCU0E11PUB28765",
-    premium: "$4,214/yr",
+    year: "2022",
+    make: "Toyota RAV4",
+    model: "Hybrid XLE AWD",
+    vin: "2T3RWRFV4NW248153",
+    premium: "$3,618/yr",
     covered: [
       "Third Party Liability — $1,000,000",
       "Accident Benefits (Section B)",
@@ -126,7 +126,7 @@ const vehicles = [
     greyFlags: [
       "Hamza listed as Occasional driver — claims where he is at fault may trigger surcharge review",
       "Muhammad Aamir has 1 minor conviction — could affect future renewals if another occurs",
-      "PHEV charging equipment damage — not explicitly addressed in policy wording",
+      "Hybrid charging equipment damage — not explicitly addressed in policy wording",
       "Personal belongings inside the vehicle — not covered under Section C (no all-risk contents coverage)",
       "Rideshare/Uber use — using the vehicle commercially is typically not covered but not explicitly stated",
       "Vehicle 1 does NOT qualify for the Good Driver rate cap — future increases may exceed 7.5%",
@@ -135,11 +135,11 @@ const vehicles = [
   },
   {
     id: 2,
-    year: "2023",
-    make: "Ford Mustang Mach-E",
-    model: "Premium 300A 4D AWD",
-    vin: "3FMTK3SU5PMA27769",
-    premium: "$3,473/yr",
+    year: "2022",
+    make: "Tesla Model 3",
+    model: "Long Range AWD",
+    vin: "5YJ3E1EA8NF187432",
+    premium: "$2,834/yr",
     covered: [
       "Third Party Liability — $1,000,000",
       "Accident Benefits (Section B)",
@@ -168,7 +168,7 @@ const vehicles = [
       "Home EV charger equipment — not covered under auto policy; would need home insurance",
       "At-fault accident waiver was declined — one at-fault claim will affect your rate at renewal",
       "Mohammad Osaid Aamir has 1 minor conviction and is listed Secondary — may impact rating if becomes Principal",
-      "Scotiabank lienholder — in a total loss, payout goes jointly to you and the bank",
+      "RBC lienholder — in a total loss, payout goes jointly to you and the bank",
     ],
   },
 ];
@@ -182,7 +182,7 @@ export default function InquiryChat() {
       id: "1",
       role: "bot",
       content:
-        "Hello Hamza! I have full access to your Desjardins policy (Z6023FK0). You can ask me anything about your coverage — deductibles, what's included, how a claim works, or anything else. I'll answer strictly based on your policy.",
+        "Hello Hamza! I have full access to your Desjardins policy (Q4817RX9). You can ask me anything about your coverage — deductibles, what's included, how a claim works, or anything else. I'll answer strictly based on your policy.",
     },
   ]);
 
@@ -283,7 +283,7 @@ export default function InquiryChat() {
             </div>
             <div>
               <h1 className="font-semibold text-foreground leading-tight">Hello, Hamza Aamir</h1>
-              <p className="text-xs text-muted-foreground">Policy Z6023FK0 · Desjardins · Active until Nov 28, 2026</p>
+              <p className="text-xs text-muted-foreground">Policy Q4817RX9 · Desjardins · Active until Aug 15, 2026</p>
             </div>
           </div>
         </div>
@@ -309,7 +309,7 @@ export default function InquiryChat() {
             <FileText className="h-4 w-4 text-primary" />
             <span className="font-semibold text-sm text-foreground">View Your Policy</span>
             <Badge variant="outline" className="text-[10px] h-5">2 Vehicles</Badge>
-            <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-0">$7,717/yr</Badge>
+            <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-0">$6,482/yr</Badge>
           </div>
           {policyOpen ? (
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -324,15 +324,15 @@ export default function InquiryChat() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-muted-foreground font-medium uppercase tracking-wider mb-1">Policy #</p>
-                <p className="font-bold text-foreground">Z6023FK0</p>
+                <p className="font-bold text-foreground">Q4817RX9</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-muted-foreground font-medium uppercase tracking-wider mb-1">Period</p>
-                <p className="font-bold text-foreground">Nov 28/25 – Nov 28/26</p>
+                <p className="font-bold text-foreground">Aug 15/25 – Aug 15/26</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-muted-foreground font-medium uppercase tracking-wider mb-1">Monthly</p>
-                <p className="font-bold text-foreground">$643.09</p>
+                <p className="font-bold text-foreground">$540.17</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-muted-foreground font-medium uppercase tracking-wider mb-1">Agent</p>
@@ -501,7 +501,7 @@ export default function InquiryChat() {
           </Button>
         </div>
         <p className="text-center text-xs text-muted-foreground mt-3">
-          Answers are based on your Desjardins policy Z6023FK0. For binding advice, contact your agent.
+          Answers are based on your Desjardins policy Q4817RX9. For binding advice, contact your agent.
         </p>
       </div>
     </div>
