@@ -9,6 +9,7 @@ import ClaimChat from "@/pages/claim-chat";
 import InquiryChat from "@/pages/inquiry-chat";
 import AdminDashboard from "@/pages/admin-dashboard";
 import FAQ from "@/pages/faq";
+import ClaimHistory from "@/pages/claim-history";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/inquiry" component={InquiryChat} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/faq" component={FAQ} />
+      <Route path="/claim-history" component={ClaimHistory} />
       <Route component={NotFound} />
     </Switch>
   );

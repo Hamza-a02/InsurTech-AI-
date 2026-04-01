@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ShieldAlert, MessageSquare, ShieldCheck, ArrowRight } from "lucide-react";
+import { ShieldAlert, MessageSquare, ShieldCheck, ArrowRight, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -14,8 +14,14 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3">
           <Link href="/faq">
-            <Button variant="ghost" size="sm" className="font-medium">
+            <Button variant="ghost" size="sm" className="font-medium" data-testid="link-faq">
               FAQ
+            </Button>
+          </Link>
+          <Link href="/claim-history">
+            <Button variant="ghost" size="sm" className="font-medium gap-1.5" data-testid="link-claim-history">
+              <ClipboardList className="h-4 w-4" />
+              Claim History
             </Button>
           </Link>
           <Link href="/admin">
