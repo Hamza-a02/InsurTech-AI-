@@ -28,7 +28,7 @@ Return ONLY a JSON array like: ["Point 1", "Point 2", "FLAG: Potential legal inv
       ],
       max_completion_tokens: 512,
     });
-    const content = response.choices[0]?.message?.content ?? "[]";
+    const content = response.choices[0]?.message?.content || "[]";
     const parsed = JSON.parse(content);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -64,7 +64,7 @@ Be strict. Vague phrases like "I got hit", "there was an accident", or "someone 
       ],
       max_completion_tokens: 200,
     });
-    const content = response.choices[0]?.message?.content ?? '{"sufficient": false, "followUp": "Could you provide more details about the incident — who was involved, what exactly happened, where it occurred, and when?"}';
+    const content = response.choices[0]?.message?.content || '{"sufficient": false, "followUp": "Could you provide more details about the incident — who was involved, what exactly happened, where it occurred, and when?"}';
     return JSON.parse(content);
   } catch {
     return { sufficient: true }; // fail open so the flow isn't blocked by API errors
@@ -105,7 +105,7 @@ ${JSON.stringify(claim, null, 2)}`,
       ],
       max_completion_tokens: 512,
     });
-    return response.choices[0]?.message?.content ?? "Not enough info in the current claim draft. Please call the client or consult your senior adjuster to get more info.";
+    return response.choices[0]?.message?.content || "Not enough info in the current claim draft. Please call the client or consult your senior adjuster to get more info.";
   } catch {
     return "Not enough info in the current claim draft. Please call the client or consult your senior adjuster to get more info.";
   }
@@ -148,8 +148,11 @@ Keep all responses concise and in plain language. Never speculate or invent poli
       ],
       max_completion_tokens: 600,
     });
-    return response.choices[0]?.message?.content ?? "This isn't addressed in your policy document. For a definitive answer, please contact your agent, Anita Ip, at 587-353-7500.";
-  } catch {
+    const raw = response.choices[0]?.message?.content;
+    console.log("[inquiry] OpenAI finish_reason:", response.choices[0]?.finish_reason, "| content length:", raw?.length ?? "null");
+    return raw || "This isn't addressed in your policy document. For a definitive answer, please contact your agent, Anita Ip, at 587-353-7500.";
+  } catch (err) {
+    console.error("[inquiry] OpenAI error:", err);
     return "This isn't addressed in your policy document. For a definitive answer, please contact your agent, Anita Ip, at 587-353-7500.";
   }
 }
