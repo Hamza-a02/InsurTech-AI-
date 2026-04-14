@@ -19,58 +19,58 @@ type Message = {
 };
 
 const POLICY_CONTEXT = `
-DESJARDINS AUTO INSURANCE POLICY — Q4817RX9
-Insured: Afshan Aamir & Hamza Aamir, 142 Crestmont Dr SW, Calgary AB T3B 5Y4
-Policy Period: 2025-08-15 to 2026-08-15
+DESJARDINS AUTO INSURANCE POLICY — PX-7293-AT
+Insured: Nathan Greenwood & Claire Greenwood, 88 Panorama Hills Blvd NE, Calgary AB T3K 2M4
+Policy Period: 2025-10-01 to 2026-10-01
 Insurer: Certas Home and Auto Insurance Company (Desjardins)
-Agent: Anita Ip Insurance And Financial Services Limited, 587-353-7500, anita.ip@desjardins.com
-Annual Premium: $6,482.00 | Monthly Payment: $540.17 via pre-authorized debit
+Agent: Michael Dolan Insurance Services, 403-887-2100, michael.dolan@desjardins.com
+Annual Premium: $7,140.00 | Monthly Payment: $595.00 via pre-authorized debit
 Claims Line: 1-855-209-9549
 
-VEHICLE 1: 2022 Toyota RAV4 Hybrid XLE AWD
-VIN: 2T3RWRFV4NW248153 | Purchased: 2022-09, New
-Registered Owner: Afshan Aamir & Hamza Aamir
-Lienholder: TD Auto Finance, 1 TD Place, Edmonton AB T5J 2Z1
-Annual KM: 18,000 | Business KM: 8,000
+VEHICLE 1: 2023 Honda CR-V Sport Hybrid AWD
+VIN: 2HKRW2H81RH512743 | Purchased: 2023-05, New
+Registered Owner: Nathan Greenwood & Claire Greenwood
+Lienholder: BMO Bank of Montreal, 100 King St W, Toronto ON M5X 1A1
+Annual KM: 20,000 | Business KM: 6,000
 Parking: Private garage
-Discounts: 10% Hybrid Vehicle, 10% Multi-Vehicle, 25% Occasional Driver, 5% Winter Tires
-Vehicle Premium: $3,618
+Discounts: 10% Hybrid Vehicle, 10% Multi-Vehicle, 5% Winter Tires
+Vehicle Premium: $3,850
 
 VEHICLE 1 COVERAGE:
-- Section A Third Party Liability: $1,000,000 limit (BI premium $1,542 + Occ $78; PD included)
-- Section B Accident Benefits: As per policy (premium $248 + Occ $36)
-- Section A.1 DCPD (Direct Compensation for Property Damage): $0 deductible (premium $352 + Occ $61)
-- Section C - Collision: $1,000 deductible (premium $504 + Occ $82)
-- Section C - Comprehensive: $1,000 deductible (premium $281)
+- Section A Third Party Liability: $1,000,000 limit (BI premium $1,620 + Occ $84; PD included)
+- Section B Accident Benefits: As per policy (premium $262 + Occ $40)
+- Section A.1 DCPD (Direct Compensation for Property Damage): $0 deductible (premium $368 + Occ $65)
+- Section C - Collision: $1,000 deductible (premium $528 + Occ $88)
+- Section C - Comprehensive: $500 deductible (premium $294)
 - Section C - All Perils: Included (combines Collision + Comprehensive)
 - Section C - Specified Perils: Included
-- CAE #1 Endorsement: 5-Year New Vehicle Protection (premium $282 + Occ $35)
+- CAE #1 Endorsement: 5-Year New Vehicle Protection (premium $298 + Occ $38)
 - Trouble-Free Option: Applicable
-- AB-S.E.F. 13(D) Limitation of Glass Coverage: GLASS IS EXCLUDED (saves -$7 premium)
+- AB-S.E.F. 13(D) Limitation of Glass Coverage: GLASS IS EXCLUDED (saves -$9 premium)
 - AB-S.E.F. 20 Loss of Use: $1,500 limit — Included
 - AB-S.E.F. 35 Emergency Service Expense: Included
 
-VEHICLE 2: 2022 Tesla Model 3 Long Range AWD
-VIN: 5YJ3E1EA8NF187432 | Purchased: 2022-04, New
-Registered Owner: Afshan Aamir
-Lienholder: Royal Bank of Canada, 200 Bay Street, Toronto ON M5J 2J5
-Annual KM: 22,000
+VEHICLE 2: 2021 Ford Mustang Mach-E Premium RWD
+VIN: 3FMTK3SU8MMA23847 | Purchased: 2021-11, New
+Registered Owner: Claire Greenwood
+Lienholder: CIBC Personal Finance, 199 Bay St, Toronto ON M5L 1A2
+Annual KM: 15,000
 Parking: Private garage
-Discounts: 10% Electric Vehicle, 10% Multi-Vehicle, 25% Occasional Driver, 5% Winter Tires
-Vehicle Premium: $2,834
+Discounts: 10% Electric Vehicle, 10% Multi-Vehicle, 5% Winter Tires
+Vehicle Premium: $3,290
 NOTE: Higher deductibles apply due to make/model.
 
 VEHICLE 2 COVERAGE:
-- Section A Third Party Liability: $1,000,000 limit (BI premium $762 + Occ $94; PD included)
-- Section B Accident Benefits: As per policy (premium $322 + Occ $55)
-- Section A.1 DCPD: $0 deductible (premium $164 + Occ $68)
-- Section C - Collision: $1,000 deductible (premium $362 + Occ $111)
-- Section C - Comprehensive: $1,000 deductible (premium $516)
+- Section A Third Party Liability: $1,000,000 limit (BI premium $798 + Occ $102; PD included)
+- Section B Accident Benefits: As per policy (premium $338 + Occ $60)
+- Section A.1 DCPD: $0 deductible (premium $172 + Occ $74)
+- Section C - Collision: $1,000 deductible (premium $378 + Occ $118)
+- Section C - Comprehensive: $1,000 deductible (premium $534)
 - Section C - All Perils: Included
 - Section C - Specified Perils: Included
-- CAE #1 Endorsement: 5-Year New Vehicle Protection (premium $414 + Occ $72)
+- CAE #1 Endorsement: 5-Year New Vehicle Protection (premium $432 + Occ $80)
 - Trouble-Free Option: Applicable
-- AB-S.E.F. 13(D) Limitation of Glass Coverage: GLASS IS EXCLUDED (saves -$13 premium)
+- AB-S.E.F. 13(D) Limitation of Glass Coverage: GLASS IS EXCLUDED (saves -$14 premium)
 - AB-S.E.F. 20 Loss of Use: $1,500 limit — Included
 - AB-S.E.F. 35 Emergency Service Expense: Included
 - AB-S.E.F. 39(A) At-Fault Accident Waiver: DECLINED — NOT INCLUDED
@@ -80,12 +80,12 @@ POLICY-WIDE ENDORSEMENTS:
 - AB-S.E.F. 44 Family Protection Endorsement: $1,000,000 (premium $30)
 
 DRIVERS:
-- Afshan Aamir (DOB 1978-04-15, F, Married): Licensed 2005-03. Vehicle 1: Secondary, Vehicle 2: Principal
-- Muhammad Aamir (DOB 1969-08-22, M, Married): Licensed 1992-05. Vehicle 1: Principal, Vehicle 2: Secondary. Has 1 minor conviction in past 3 years.
-- Hamza Aamir (DOB 2001-06-14, M, Single): Licensed 2022-09. Has Driver Training Certificate (DTC). Vehicle 1: Occasional, Vehicle 2: Occasional
-- Mohammad Osaid Aamir (DOB 1999-11-03, M, Single): Licensed 2022-09. Vehicle 1: Secondary, Vehicle 2: Secondary. Has 1 minor conviction.
+- Claire Greenwood (DOB 1980-06-22, F, Married): Licensed 2000-08. Vehicle 1: Principal, Vehicle 2: Secondary
+- Nathan Greenwood (DOB 1977-11-05, M, Married): Licensed 1998-03. Vehicle 1: Secondary, Vehicle 2: Principal. Has 1 minor conviction in past 3 years.
+- Aiden Greenwood (DOB 2002-03-18, M, Single): Licensed 2021-07. Has Driver Training Certificate (DTC). Vehicle 1: Occasional, Vehicle 2: Occasional
+- Sophia Greenwood (DOB 2004-09-11, F, Single): Licensed 2023-05. Vehicle 1: Occasional, Vehicle 2: Occasional
 
-CHARGEABLE CLAIMS: 2022-03-14 Collision; 2020-07-29 Accident Benefits + Collision; 2018-02-05 Collision
+CHARGEABLE CLAIMS: 2023-05-17 Collision; 2021-09-30 Accident Benefits + Collision; 2019-12-08 Comprehensive
 
 GOOD DRIVER RATE CAP NOTE:
 - Vehicle 1: Does NOT qualify for the good driver rate cap (exemption applies — premium increase may exceed 7.5% cap)
@@ -97,17 +97,17 @@ GLASS COVERAGE NOTE: Both vehicles have AB-S.E.F. 13(D) — glass damage is expl
 const vehicles = [
   {
     id: 1,
-    year: "2022",
-    make: "Toyota RAV4",
-    model: "Hybrid XLE AWD",
-    vin: "2T3RWRFV4NW248153",
-    premium: "$3,618/yr",
+    year: "2023",
+    make: "Honda CR-V",
+    model: "Sport Hybrid AWD",
+    vin: "2HKRW2H81RH512743",
+    premium: "$3,850/yr",
     covered: [
       "Third Party Liability — $1,000,000",
       "Accident Benefits (Section B)",
       "Direct Compensation for Property Damage (DCPD) — $0 deductible",
       "Collision — $1,000 deductible",
-      "Comprehensive — $1,000 deductible",
+      "Comprehensive — $500 deductible",
       "All Perils & Specified Perils",
       "5-Year New Vehicle Protection (CAE #1)",
       "Trouble-Free Option",
@@ -124,22 +124,22 @@ const vehicles = [
       "At-Fault Accident Waiver (not applicable to this vehicle)",
     ],
     greyFlags: [
-      "Hamza listed as Occasional driver — claims where he is at fault may trigger surcharge review",
-      "Muhammad Aamir has 1 minor conviction — could affect future renewals if another occurs",
+      "Aiden Greenwood listed as Occasional driver — at-fault claims may trigger surcharge review",
+      "Nathan Greenwood has 1 minor conviction — a further violation could affect future renewals",
       "Hybrid charging equipment damage — not explicitly addressed in policy wording",
       "Personal belongings inside the vehicle — not covered under Section C (no all-risk contents coverage)",
-      "Rideshare/Uber use — using the vehicle commercially is typically not covered but not explicitly stated",
+      "Rideshare/Uber use — commercial use is typically not covered but not explicitly stated in policy",
       "Vehicle 1 does NOT qualify for the Good Driver rate cap — future increases may exceed 7.5%",
       "Towing is reimbursed only if the underlying claim is covered — standalone towing may not be paid",
     ],
   },
   {
     id: 2,
-    year: "2022",
-    make: "Tesla Model 3",
-    model: "Long Range AWD",
-    vin: "5YJ3E1EA8NF187432",
-    premium: "$2,834/yr",
+    year: "2021",
+    make: "Ford Mustang Mach-E",
+    model: "Premium RWD",
+    vin: "3FMTK3SU8MMA23847",
+    premium: "$3,290/yr",
     covered: [
       "Third Party Liability — $1,000,000",
       "Accident Benefits (Section B)",
@@ -159,16 +159,16 @@ const vehicles = [
     notCovered: [
       "Glass damage — explicitly excluded (SEF 13D applies)",
       "Windshield chips, cracks, or breakage",
-      "At-Fault Accident Waiver (SEF 39A) — you declined this coverage",
+      "At-Fault Accident Waiver (SEF 39A) — declined by policyholder",
     ],
     greyFlags: [
-      "Higher deductibles apply due to vehicle make/model — exact amounts, check your Certificate",
-      "Hamza listed as Occasional driver — at-fault claim by him not protected by waiver (waiver was declined)",
-      "EV battery damage — Comprehensive covers 'other than collision' perils, but battery degradation is excluded",
-      "Home EV charger equipment — not covered under auto policy; would need home insurance",
+      "Higher deductibles apply due to vehicle make/model — refer to your Certificate of Insurance",
+      "Aiden Greenwood listed as Occasional driver — at-fault claim not protected (waiver was declined)",
+      "EV battery damage — Comprehensive covers named perils, but battery degradation is excluded",
+      "Home EV charger equipment — not covered under auto policy; requires separate home insurance",
       "At-fault accident waiver was declined — one at-fault claim will affect your rate at renewal",
-      "Mohammad Osaid Aamir has 1 minor conviction and is listed Secondary — may impact rating if becomes Principal",
-      "RBC lienholder — in a total loss, payout goes jointly to you and the bank",
+      "Sophia Greenwood is listed Occasional — rating may be impacted if she becomes Principal driver",
+      "CIBC lienholder — in a total loss, settlement is paid jointly to policyholder and the lender",
     ],
   },
 ];
@@ -182,7 +182,7 @@ export default function InquiryChat() {
       id: "1",
       role: "bot",
       content:
-        "Hello Hamza! I have full access to your Desjardins policy (Q4817RX9). You can ask me anything about your coverage — deductibles, what's included, how a claim works, or anything else. I'll answer strictly based on your policy.",
+        "Hello Nathan! I have full access to your Desjardins policy (PX-7293-AT). You can ask me anything about your coverage — deductibles, what's included, how a claim works, or anything else. I'll answer strictly based on your policy.",
     },
   ]);
 
@@ -220,7 +220,7 @@ export default function InquiryChat() {
     onError: () => {
       setIsBotTyping(false);
       addBotMessage(
-        "I'm having trouble connecting right now. Please try again or contact your agent at 587-353-7500."
+        "I'm having trouble connecting right now. Please try again or contact your agent at 403-887-2100."
       );
     },
   });
@@ -249,7 +249,7 @@ export default function InquiryChat() {
       setTimeout(() => {
         setIsBotTyping(false);
         addBotMessage(
-          "I understand your concern, Hamza. Given the nature of this, I've flagged this session for priority review by a senior adjuster who will reach out shortly. You can also contact your agent Anita Ip directly at 587-353-7500."
+          "I understand your concern, Nathan. Given the nature of this, I've flagged this session for priority review by a senior adjuster who will reach out shortly. You can also contact your agent Michael Dolan directly at 403-887-2100."
         );
       }, 1000);
       return;
@@ -262,7 +262,7 @@ export default function InquiryChat() {
   const handleRequestHuman = () => {
     toast({
       title: "Agent Notified",
-      description: "Anita Ip's office has been notified and will contact you shortly at your registered number.",
+      description: "Michael Dolan's office has been notified and will contact you shortly at your registered number.",
     });
   };
 
@@ -282,8 +282,8 @@ export default function InquiryChat() {
               <MessageSquare className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <h1 className="font-semibold text-foreground leading-tight">Hello, Hamza Aamir</h1>
-              <p className="text-xs text-muted-foreground">Policy Q4817RX9 · Desjardins · Active until Aug 15, 2026</p>
+              <h1 className="font-semibold text-foreground leading-tight">Hello, Nathan Greenwood</h1>
+              <p className="text-xs text-muted-foreground">Policy PX-7293-AT · Desjardins · Active until Oct 1, 2026</p>
             </div>
           </div>
         </div>
@@ -309,7 +309,7 @@ export default function InquiryChat() {
             <FileText className="h-4 w-4 text-primary" />
             <span className="font-semibold text-sm text-foreground">View Your Policy</span>
             <Badge variant="outline" className="text-[10px] h-5">2 Vehicles</Badge>
-            <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-0">$6,482/yr</Badge>
+            <Badge variant="secondary" className="text-[10px] h-5 bg-primary/10 text-primary border-0">$7,140/yr</Badge>
           </div>
           {policyOpen ? (
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -324,19 +324,19 @@ export default function InquiryChat() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-muted-foreground font-medium uppercase tracking-wider mb-1">Policy #</p>
-                <p className="font-bold text-foreground">Q4817RX9</p>
+                <p className="font-bold text-foreground">PX-7293-AT</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-muted-foreground font-medium uppercase tracking-wider mb-1">Period</p>
-                <p className="font-bold text-foreground">Aug 15/25 – Aug 15/26</p>
+                <p className="font-bold text-foreground">Oct 1/25 – Oct 1/26</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-muted-foreground font-medium uppercase tracking-wider mb-1">Monthly</p>
-                <p className="font-bold text-foreground">$540.17</p>
+                <p className="font-bold text-foreground">$595.00</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-muted-foreground font-medium uppercase tracking-wider mb-1">Agent</p>
-                <p className="font-bold text-foreground">Anita Ip · 587-353-7500</p>
+                <p className="font-bold text-foreground">Michael Dolan · 403-887-2100</p>
               </div>
             </div>
 
@@ -501,7 +501,7 @@ export default function InquiryChat() {
           </Button>
         </div>
         <p className="text-center text-xs text-muted-foreground mt-3">
-          Answers are based on your Desjardins policy Q4817RX9. For binding advice, contact your agent.
+          Answers are based on your Desjardins policy PX-7293-AT. For binding advice, contact your agent.
         </p>
       </div>
     </div>

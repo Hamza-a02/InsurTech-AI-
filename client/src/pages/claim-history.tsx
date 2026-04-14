@@ -91,9 +91,9 @@ export default function ClaimHistory() {
 
   const customerClaims = claims.filter(
     (c) =>
-      c.policyId === "Q4817RX9" ||
-      c.policyholderName?.toLowerCase().includes("hamza") ||
-      c.policyholderName?.toLowerCase().includes("aamir")
+      c.policyId === "PX-7293-AT" ||
+      c.policyholderName?.toLowerCase().includes("nathan") ||
+      c.policyholderName?.toLowerCase().includes("greenwood")
   );
 
   const formatDate = (ts: string | Date) => {
@@ -129,9 +129,9 @@ export default function ClaimHistory() {
           <p className="text-muted-foreground pl-10">
             Policy{" "}
             <span className="font-semibold text-foreground" data-testid="text-policy-number">
-              Q4817RX9
+              PX-7293-AT
             </span>{" "}
-            &mdash; Hamza Aamir
+            &mdash; Nathan Greenwood
           </p>
         </div>
 
