@@ -89,11 +89,8 @@ export default function ClaimHistory() {
     queryKey: ["/api/claims"],
   });
 
-  const customerClaims = claims.filter(
-    (c) =>
-      c.policyId === "PX-7293-AT" ||
-      c.policyholderName?.toLowerCase().includes("nathan") ||
-      c.policyholderName?.toLowerCase().includes("greenwood")
+  const customerClaims = [...claims].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   const formatDate = (ts: string | Date) => {

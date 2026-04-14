@@ -8,6 +8,7 @@ export interface IStorage {
   createClaim(claim: InsertClaim & { priority?: string; summary?: string[] }): Promise<Claim>;
   updateClaim(id: string, updates: Partial<UpdateClaim>): Promise<Claim | undefined>;
   verifyClaim(id: string, adjusterName: string): Promise<Claim | undefined>;
+  deleteAllClaims(): Promise<void>;
 }
 
 class DatabaseStorage implements IStorage {
@@ -54,6 +55,10 @@ class DatabaseStorage implements IStorage {
       .where(eq(claims.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteAllClaims(): Promise<void> {
+    await db.delete(claims);
   }
 }
 

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, ArrowLeft, AlertTriangle, CheckCircle2,
-  Clock, FileText, User, Calendar, Search, Bot, Send, Edit2, X, Save
+  Clock, FileText, User, Calendar, Search, Bot, Send, Edit2, X, Save, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,6 +22,7 @@ export default function AdminDashboard() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Claim>>({});
@@ -59,6 +60,18 @@ export default function AdminDashboard() {
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ["/api/claims"] });
       setSelectedClaim(updated);
+    },
+  });
+
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", "/api/claims");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/claims"] });
+      setSelectedClaim(null);
+      setShowClearConfirm(false);
     },
   });
 
@@ -198,22 +211,64 @@ export default function AdminDashboard() {
         </div>
 
         <Card className="shadow-sm border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b gap-4 flex-wrap">
             <div>
               <CardTitle>Claims Queue</CardTitle>
               <CardDescription>Claims collected by AI pending human verification</CardDescription>
             </div>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                data-testid="input-search-claims"
-                placeholder="Search ID or Name..."
-                className="pl-9 bg-muted/50"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex items-center gap-3">
+              <div className="relative w-56">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  data-testid="input-search-claims"
+                  placeholder="Search ID or Name..."
+                  className="pl-9 bg-muted/50"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-1.5 shrink-0"
+                onClick={() => setShowClearConfirm(true)}
+                disabled={claims.length === 0}
+                data-testid="button-clear-all-claims"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear All
+              </Button>
             </div>
           </CardHeader>
+
+          {/* Clear All Confirmation Dialog */}
+          <Dialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Clear All Claims?</DialogTitle>
+                <DialogDescription>
+                  This will permanently delete all {claims.length} claim{claims.length !== 1 ? "s" : ""} from the queue. This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowClearConfirm(false)}
+                  data-testid="button-cancel-clear"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => clearAllMutation.mutate()}
+                  disabled={clearAllMutation.isPending}
+                  data-testid="button-confirm-clear"
+                >
+                  {clearAllMutation.isPending ? "Clearing..." : "Yes, Clear All"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <div className="divide-y divide-border">
             {isLoading ? (

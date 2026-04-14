@@ -189,6 +189,17 @@ export async function registerRoutes(
     }
   });
 
+  // DELETE /api/claims — clear all claims
+  app.delete("/api/claims", async (_req: Request, res: Response) => {
+    try {
+      await storage.deleteAllClaims();
+      res.json({ message: "All claims deleted" });
+    } catch (err) {
+      console.error("DELETE /api/claims error:", err);
+      res.status(500).json({ message: "Failed to delete claims" });
+    }
+  });
+
   // GET /api/claims/:id — single claim
   app.get("/api/claims/:id", async (req: Request, res: Response) => {
     try {
